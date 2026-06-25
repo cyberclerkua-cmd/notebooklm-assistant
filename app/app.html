@@ -18,10 +18,15 @@
     h1 {
       font-size: 22px;
       font-weight: 600;
-      margin-bottom: 16px;
+      margin-bottom: 4px;
       display: flex;
       align-items: center;
       gap: 8px;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: #5f6368;
+      margin-bottom: 16px;
     }
     .controls {
       display: flex;
@@ -51,6 +56,16 @@
     .btn-primary:hover { background: #3367d6; }
     .btn-secondary { background: #34a853; color: #fff; border-color: #34a853; }
     .btn-secondary:hover { background: #2d8e47; }
+    .btn-retry {
+      padding: 4px 12px;
+      font-size: 12px;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+    .lang-select {
+      margin-left: auto;
+      min-width: 120px;
+    }
     .tab-list {
       list-style: none;
     }
@@ -96,29 +111,44 @@
       margin-top: 12px;
       font-size: 13px;
       display: none;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
     }
-    .status.success { display: block; background: #e6f4ea; color: #137333; }
-    .status.error { display: block; background: #fce8e6; color: #c5221f; }
-    .status.info { display: block; background: #e8f0fe; color: #1a73e8; }
+    .status.success { display: flex; background: #e6f4ea; color: #137333; }
+    .status.error { display: flex; background: #fce8e6; color: #c5221f; }
+    .status.info { display: flex; background: #e8f0fe; color: #1a73e8; }
     .count { font-size: 13px; color: #5f6368; }
+    .empty-state {
+      padding: 24px;
+      text-align: center;
+      color: #5f6368;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
-  <h1><i class="ms ms-tab"></i> Import Open Tabs</h1>
+  <h1><i class="ms ms-tab"></i> <span data-i18n="appTitle">Import Open Tabs</span></h1>
+  <p class="subtitle" data-i18n="appSubtitle">Select browser tabs to add to your NotebookLM notebook.</p>
 
   <div class="controls">
-    <select id="notebook-select">
-      <option value="">Select notebook...</option>
+    <select id="notebook-select" data-i18n-title="selectNotebook">
+      <option value="" data-i18n="selectNotebook">Select notebook...</option>
     </select>
-    <button class="btn" id="select-all"><i class="ms ms-select_all"></i> Select all</button>
-    <button class="btn btn-primary" id="add-selected"><i class="ms ms-add"></i> Add selected</button>
-    <button class="btn btn-secondary" id="add-as-queue"><i class="ms ms-queue"></i> Add to queue</button>
+    <button class="btn" id="select-all" type="button"><i class="ms ms-select_all"></i> <span data-i18n="selectAll">Select all</span></button>
+    <button class="btn btn-primary" id="add-selected" type="button"><i class="ms ms-add"></i> <span data-i18n="importSelected">Add selected</span></button>
+    <button class="btn btn-secondary" id="add-as-queue" type="button"><i class="ms ms-queue"></i> <span data-i18n="addToQueue">Add to queue</span></button>
     <span class="count" id="count">0 tabs</span>
+    <select id="lang-select" class="lang-select" data-i18n-title="settingsLanguage" aria-label="Language">
+      <option value="en">English</option>
+      <option value="ru">Русский</option>
+    </select>
   </div>
 
   <ul class="tab-list" id="tab-list"></ul>
   <div class="status" id="status"></div>
 
+  <script src="../lib/i18n.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

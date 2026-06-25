@@ -5,6 +5,14 @@ const $ = sel => document.querySelector(sel);
 const $$ = sel => document.querySelectorAll(sel);
 const bg = (cmd, params = {}) => chrome.runtime.sendMessage({ cmd, params });
 
+// i18n helper — returns the key itself if I18n isn't ready / key missing
+function t(key, substitutions = {}) {
+  if (typeof I18n !== 'undefined' && typeof I18n.get === 'function') {
+    return I18n.get(key, substitutions);
+  }
+  return key;
+}
+
 function showStatus(elId, msg, type, duration = 4000) {
   const el = $(elId);
   if (!el) return;
@@ -13,10 +21,16 @@ function showStatus(elId, msg, type, duration = 4000) {
   if (duration > 0) setTimeout(() => { el.className = 'status'; }, duration);
 }
 
+// Escapes <, >, &, " and ' so the output is safe in BOTH text content AND
+// double-quoted attribute values (e.g. data-url="${escapeHtml(u)}").
 function escapeHtml(text) {
-  const d = document.createElement('div');
-  d.textContent = text || '';
-  return d.innerHTML;
+  if (text == null) return '';
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function timeAgo(ts) {
@@ -89,7 +103,12 @@ function applyTheme(theme) {
 // Theme only controlled from Settings tab
 $('#settings-theme').addEventListener('change', async (e) => {
   const theme = e.target.value;
-  await chrome.storage.sync.set({ theme });
+  try {
+    await chrome.storage.sync.set({ theme });
+  } catch (err) {
+    showStatus('#home-status', `Error saving theme: ${escapeHtml(err.message)}`, 'error');
+    return;
+  }
   applyTheme(theme);
 });
 
@@ -112,27 +131,61 @@ async function loadAccounts() {
     const accounts = await bg('list-accounts');
     select.innerHTML = '';
     if (Array.isArray(accounts) && accounts.length > 0) {
+      // Read the persisted active account (DO NOT hardcode 0 anymore)
+      let activeAuthuser = 0;
+      try {
+        const active = await bg('get-active-account');
+        if (active && typeof active.authuser === 'number') {
+          activeAuthuser = active.authuser;
+        }
+      } catch (_) {
+        // Background may be older version (no get-active-account); fall back to 0
+      }
+
       accounts.forEach(acc => {
         const opt = document.createElement('option');
         opt.value = acc.authuser;
         opt.textContent = `${acc.name || acc.email} (${acc.email})`;
         select.appendChild(opt);
       });
-      // Set first account
-      await bg('set-authuser', { authuser: 0 });
+
+      // Select the persisted account if present in the list, else the first one
+      const exists = accounts.some(a => Number(a.authuser) === Number(activeAuthuser));
+      const selectedAuthuser = exists ? Number(activeAuthuser) : Number(accounts[0].authuser);
+      select.value = String(selectedAuthuser);
+
+      // Sync background's in-memory currentAuthuser with the persisted value
+      try {
+        await bg('set-active-account', { authuser: selectedAuthuser });
+      } catch (_) {
+        // Background may not yet support set-active-account; fall back silently
+        try {
+          await bg('set-authuser', { authuser: selectedAuthuser });
+        } catch (_) { /* ignore */ }
+      }
       await loadNotebooks();
     } else {
       select.innerHTML = '<option value="">No accounts found</option>';
     }
   } catch (e) {
     select.innerHTML = '<option value="">Error loading accounts</option>';
+    showStatus('#home-status', `Error: ${escapeHtml(e.message)}`, 'error');
   }
 }
 
 $('#account-select').addEventListener('change', async (e) => {
   const authuser = parseInt(e.target.value) || 0;
-  await bg('set-authuser', { authuser });
-  loadNotebooks();
+  try {
+    try {
+      await bg('set-active-account', { authuser });
+    } catch (_) {
+      // Fall back to legacy command if background doesn't support the new one
+      await bg('set-authuser', { authuser });
+    }
+    await loadNotebooks();
+  } catch (err) {
+    showStatus('#home-status', `Error: ${escapeHtml(err.message)}`, 'error');
+  }
 });
 
 // ═══════════════════════════════════════
@@ -172,7 +225,11 @@ async function loadNotebooks() {
 
 $('#notebook-select').addEventListener('change', async (e) => {
   currentNotebookId = e.target.value;
-  await chrome.storage.local.set({ lastNotebookId: currentNotebookId });
+  try {
+    await chrome.storage.local.set({ lastNotebookId: currentNotebookId });
+  } catch (err) {
+    showStatus('#home-status', `Error: ${escapeHtml(err.message)}`, 'error');
+  }
 });
 
 $('#refresh-notebooks').addEventListener('click', loadNotebooks);
@@ -184,7 +241,7 @@ $('#create-notebook').addEventListener('click', async () => {
   showStatus('#home-status', 'Creating...', 'info', 0);
   try {
     const result = await bg('create-notebook', { title });
-    if (result.id) {
+    if (result && result.id) {
       showStatus('#home-status', `Created: ${title}`, 'success');
       $('#new-notebook-title').value = '';
       loadNotebooks();
@@ -192,7 +249,7 @@ $('#create-notebook').addEventListener('click', async () => {
       showStatus('#home-status', 'Could not create notebook', 'error');
     }
   } catch (e) {
-    showStatus('#home-status', `Error: ${e.message}`, 'error');
+    showStatus('#home-status', `Error: ${escapeHtml(e.message)}`, 'error');
   }
 });
 
@@ -210,13 +267,13 @@ function requireNotebook() {
 // Add current page
 $('#add-current-page').addEventListener('click', async () => {
   if (!requireNotebook()) return;
-  showStatus('#home-status', 'Adding...', 'info', 0);
+  showStatus('#home-status', t('statusAdding'), 'info', 0);
   try {
     const tab = await bg('get-current-tab');
     await bg('add-source', { notebookId: currentNotebookId, url: tab.url });
-    showStatus('#home-status', `Added: ${tab.title}`, 'success');
+    showStatus('#home-status', `${t('statusAdded')} ${escapeHtml(tab.title || '')}`, 'success');
   } catch (e) {
-    showStatus('#home-status', `Error: ${e.message}`, 'error');
+    showStatus('#home-status', `Error: ${escapeHtml(e.message)}`, 'error');
   }
 });
 
@@ -227,9 +284,9 @@ $('#add-as-pdf').addEventListener('click', async () => {
   try {
     const tab = await bg('get-current-tab');
     await bg('add-as-pdf', { notebookId: currentNotebookId, tabId: tab.id, title: tab.title });
-    showStatus('#home-status', `PDF saved: ${tab.title}`, 'success');
+    showStatus('#home-status', `PDF saved: ${escapeHtml(tab.title || '')}`, 'success');
   } catch (e) {
-    showStatus('#home-status', `Error: ${e.message}`, 'error');
+    showStatus('#home-status', `Error: ${escapeHtml(e.message)}`, 'error');
   }
 });
 
@@ -238,13 +295,13 @@ $('#add-single-url').addEventListener('click', async () => {
   if (!requireNotebook()) return;
   const url = $('#single-url').value.trim();
   if (!url) return;
-  showStatus('#home-status', 'Adding...', 'info', 0);
+  showStatus('#home-status', t('statusAdding'), 'info', 0);
   try {
     await bg('add-source', { notebookId: currentNotebookId, url });
-    showStatus('#home-status', 'Added!', 'success');
+    showStatus('#home-status', t('statusAdded'), 'success');
     $('#single-url').value = '';
   } catch (e) {
-    showStatus('#home-status', `Error: ${e.message}`, 'error');
+    showStatus('#home-status', `Error: ${escapeHtml(e.message)}`, 'error');
   }
 });
 
@@ -259,7 +316,7 @@ $('#bulk-add').addEventListener('click', async () => {
     showStatus('#home-status', `Added ${urls.length} sources!`, 'success');
     $('#bulk-urls').value = '';
   } catch (e) {
-    showStatus('#home-status', `Error: ${e.message}`, 'error');
+    showStatus('#home-status', `Error: ${escapeHtml(e.message)}`, 'error');
   }
 });
 
@@ -267,22 +324,38 @@ $('#bulk-add').addEventListener('click', async () => {
 $('#bulk-queue').addEventListener('click', async () => {
   const urls = $('#bulk-urls').value.trim().split('\n').map(u => u.trim()).filter(u => u);
   if (!urls.length) return;
-  await bg('add-to-queue', { items: urls.map(url => ({ url })) });
-  showStatus('#home-status', `${urls.length} URLs added to queue`, 'success');
-  $('#bulk-urls').value = '';
+  try {
+    await bg('add-to-queue', { items: urls.map(url => ({ url })) });
+    showStatus('#home-status', `${urls.length} URLs added to queue`, 'success');
+    $('#bulk-urls').value = '';
+  } catch (e) {
+    showStatus('#home-status', `Error: ${escapeHtml(e.message)}`, 'error');
+  }
 });
 
-// Import tabs
+// Open the full-page tab manager (app/app.html)
 $('#import-tabs').addEventListener('click', () => {
-  chrome.tabs.create({ url: chrome.runtime.getURL('app/app.html') });
+  try {
+    chrome.tabs.create({ url: chrome.runtime.getURL('app/app.html') });
+  } catch (e) {
+    showStatus('#home-status', `Error: ${escapeHtml(e.message)}`, 'error');
+  }
 });
 
 // ═══════════════════════════════════════
 // PARSERS — YouTube Comments
 // ═══════════════════════════════════════
 async function checkYouTubeTab() {
-  const tab = await bg('get-current-tab');
   const info = $('#yt-info');
+  let tab;
+  try {
+    tab = await bg('get-current-tab');
+  } catch (e) {
+    info.style.display = 'block';
+    info.innerHTML = `<i class="ms ms-info" style="font-size:14px;vertical-align:middle"></i> ${escapeHtml(t('statusError') + ': ' + e.message)}`;
+    $('#start-parse').disabled = true;
+    return;
+  }
   if (tab && tab.url && tab.url.includes('youtube.com/watch')) {
     info.style.display = 'block';
     info.innerHTML = `<i class="ms ms-smart_display" style="font-size:14px;vertical-align:middle"></i> ${escapeHtml(tab.title)}`;
@@ -296,19 +369,30 @@ async function checkYouTubeTab() {
 
 $('#start-parse').addEventListener('click', async () => {
   if (!requireNotebook()) return;
-  const tab = await bg('get-current-tab');
-  if (!tab || !tab.url.includes('youtube.com/watch')) return;
+  let tab;
+  try {
+    tab = await bg('get-current-tab');
+  } catch (e) {
+    showStatus('#home-status', `Error: ${escapeHtml(e.message)}`, 'error');
+    return;
+  }
+  if (!tab || !tab.url || !tab.url.includes('youtube.com/watch')) return;
 
   // Extract video ID
   const vMatch = tab.url.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
   if (!vMatch) return;
 
   // Save settings
-  await chrome.storage.local.set({
-    commentsMode: $('#comments-mode').value,
-    commentsLimit: parseInt($('#comments-limit').value) || 1000,
-    commentsIncludeReplies: $('#comments-replies').checked
-  });
+  try {
+    await chrome.storage.local.set({
+      commentsMode: $('#comments-mode').value,
+      commentsLimit: parseInt($('#comments-limit').value) || 1000,
+      commentsIncludeReplies: $('#comments-replies').checked
+    });
+  } catch (e) {
+    showStatus('#home-status', `Error: ${escapeHtml(e.message)}`, 'error');
+    return;
+  }
 
   try {
     const result = await bg('parse-comments', {
@@ -317,8 +401,8 @@ $('#start-parse').addEventListener('click', async () => {
       tabId: tab.id
     });
 
-    if (result.error) {
-      showStatus('#home-status', `Error: ${result.error}`, 'error');
+    if (result && result.error) {
+      showStatus('#home-status', `Error: ${escapeHtml(String(result.error))}`, 'error');
       return;
     }
 
@@ -327,12 +411,16 @@ $('#start-parse').addEventListener('click', async () => {
     $('#start-parse').style.display = 'none';
     startParsePolling();
   } catch (e) {
-    showStatus('#home-status', `Error: ${e.message}`, 'error');
+    showStatus('#home-status', `Error: ${escapeHtml(e.message)}`, 'error');
   }
 });
 
 $('#cancel-parse').addEventListener('click', async () => {
-  await bg('cancel-parse');
+  try {
+    await bg('cancel-parse');
+  } catch (e) {
+    showStatus('#home-status', `Error: ${escapeHtml(e.message)}`, 'error');
+  }
   stopParsePolling();
   $('#parse-progress').style.display = 'none';
   $('#start-parse').style.display = '';
@@ -341,9 +429,17 @@ $('#cancel-parse').addEventListener('click', async () => {
 function startParsePolling() {
   stopParsePolling();
   parseTimer = setInterval(async () => {
-    const status = await bg('get-parse-status');
     const fill = $('#parse-fill');
     const text = $('#parse-text');
+    let status;
+    try {
+      status = await bg('get-parse-status');
+    } catch (e) {
+      // Background unreachable — keep polling, surface error
+      text.textContent = `Error: ${escapeHtml(e.message)}`;
+      return;
+    }
+    if (!status || !status.progress) return;
 
     if (!status.active && status.progress.phase === 'done') {
       stopParsePolling();
@@ -358,7 +454,7 @@ function startParsePolling() {
 
     if (!status.active && (status.progress.phase === 'error' || status.progress.phase === 'cancelled')) {
       stopParsePolling();
-      text.textContent = status.error ? `Error: ${status.error.message}` : 'Cancelled';
+      text.textContent = status.error ? `Error: ${escapeHtml(status.error.message || '')}` : 'Cancelled';
       setTimeout(() => {
         $('#parse-progress').style.display = 'none';
         $('#start-parse').style.display = '';
@@ -386,58 +482,192 @@ function stopParsePolling() {
   if (parseTimer) { clearInterval(parseTimer); parseTimer = null; }
 }
 
+// Restore in-progress parse UI on popup reopen (MV3 service-worker may keep
+// a long parse running across popup close/reopen cycles).
+async function restoreParseProgress() {
+  let status;
+  try {
+    status = await bg('get-parse-status');
+  } catch (_) {
+    return;
+  }
+  if (!status || !status.active || !status.progress) return;
+  // A parse is in progress — show the progress UI and resume polling
+  const progressEl = $('#parse-progress');
+  const startBtn = $('#start-parse');
+  if (!progressEl || !startBtn) return;
+  progressEl.style.display = 'flex';
+  startBtn.style.display = 'none';
+  startParsePolling();
+}
+
 // ═══════════════════════════════════════
 // PARSERS — RSS / Sitemap
 // ═══════════════════════════════════════
+// Shared helper: wire up the "Add selected to queue" button inside #rss-results
+function wireRssAddSelected(container) {
+  const btn = container.querySelector('#rss-add-selected');
+  if (!btn) return;
+  btn.addEventListener('click', async () => {
+    try {
+      const checked = container.querySelectorAll('.rss-cb:checked');
+      const items = Array.from(checked).map(cb => ({
+        url: cb.dataset.url || '',
+        title: cb.dataset.title || ''
+      })).filter(it => it.url);
+      if (!items.length) return;
+      btn.disabled = true;
+      await bg('add-to-queue', { items });
+      showStatus('#home-status', `${items.length} RSS items added to queue`, 'success');
+      btn.disabled = false;
+    } catch (err) {
+      showStatus('#home-status', `Error: ${escapeHtml(err.message)}`, 'error');
+      btn.disabled = false;
+    }
+  });
+}
+
+// Render an RSS feed's items into #rss-results with checkboxes + add-to-queue button
+function renderRssItems(container, feed) {
+  const items = (feed && Array.isArray(feed.items)) ? feed.items : [];
+  if (!items.length) {
+    container.innerHTML = `<div class="text-muted text-center">${escapeHtml(t('rssNoItems'))}</div>`;
+    return;
+  }
+  const countText = t('rssItemsFound', { COUNT: items.length });
+  container.innerHTML = `
+    ${feed.title ? `<div style="margin-bottom:4px;font-weight:600">${escapeHtml(feed.title)}</div>` : ''}
+    ${feed.description ? `<div style="margin-bottom:6px;font-size:12px;color:var(--text-secondary)">${escapeHtml(feed.description)}</div>` : ''}
+    <div style="margin-bottom:6px;font-size:12px;color:var(--text-secondary)">${escapeHtml(countText)}</div>
+    ${items.map(item => `
+      <div class="result-item">
+        <input type="checkbox" class="rss-cb" data-url="${escapeHtml(item.url || '')}" data-title="${escapeHtml(item.title || '')}" checked>
+        <i class="ms ms-rss_feed" style="font-size:14px;color:var(--accent)"></i>
+        <span class="title">${escapeHtml(item.title || item.url || '')}</span>
+      </div>
+    `).join('')}
+    <button class="btn btn-primary btn-full mt-8" id="rss-add-selected">
+      <i class="ms ms-add"></i> ${escapeHtml(t('addToQueue'))}
+    </button>
+  `;
+  wireRssAddSelected(container);
+}
+
 $('#rss-parse').addEventListener('click', async () => {
   const url = $('#rss-url').value.trim();
   if (!url) return;
   const container = $('#rss-results');
-  container.innerHTML = '<div class="text-muted text-center">Parsing...</div>';
 
+  // Validate URL first
+  let origin;
   try {
-    // Fetch and parse RSS/Sitemap in background context (CORS-free)
-    const tab = await bg('get-current-tab');
-    // For now, add URL directly to queue since full RSS parsing needs fetch access
-    await bg('add-to-queue', { items: [{ url, title: 'RSS: ' + url }] });
-    container.innerHTML = '<div class="text-muted text-center">URL added to queue</div>';
+    origin = new URL(url).origin + '/*';
+  } catch (_) {
+    container.innerHTML = '<div class="text-muted text-center">Invalid URL</div>';
+    return;
+  }
+
+  // chrome.permissions.request() MUST run in the direct user-gesture chain.
+  // Do NOT await anything else before this — check + request permission first.
+  let hasPermission = false;
+  try {
+    hasPermission = await chrome.permissions.contains({ origins: [origin] });
+  } catch (_) {
+    hasPermission = false;
+  }
+
+  if (!hasPermission) {
+    let granted = false;
+    try {
+      granted = await chrome.permissions.request({ origins: [origin] });
+    } catch (_) {
+      granted = false;
+    }
+    if (!granted) {
+      container.innerHTML = `<div class="text-muted text-center">${escapeHtml(t('rssPermissionNeeded'))}</div>`;
+      return;
+    }
+  }
+
+  container.innerHTML = '<div class="text-muted text-center">Parsing...</div>';
+  try {
+    const feed = await bg('parse-rss', { url });
+    renderRssItems(container, feed);
   } catch (e) {
-    container.innerHTML = `<div class="text-muted text-center">Error: ${e.message}</div>`;
+    container.innerHTML = `<div class="text-muted text-center">Error: ${escapeHtml(e.message)}</div>`;
   }
 });
 
 $('#rss-detect').addEventListener('click', async () => {
-  const tab = await bg('get-current-tab');
-  if (!tab) return;
-  const feeds = await bg('detect-rss', { tabId: tab.id });
   const container = $('#rss-results');
+  container.innerHTML = '<div class="text-muted text-center">Detecting...</div>';
+  let tab;
+  try {
+    tab = await bg('get-current-tab');
+  } catch (e) {
+    container.innerHTML = `<div class="text-muted text-center">Error: ${escapeHtml(e.message)}</div>`;
+    return;
+  }
+  if (!tab) {
+    container.innerHTML = '<div class="text-muted text-center">No active tab</div>';
+    return;
+  }
+  let feeds;
+  try {
+    feeds = await bg('detect-rss', { tabId: tab.id });
+  } catch (e) {
+    container.innerHTML = `<div class="text-muted text-center">Error: ${escapeHtml(e.message)}</div>`;
+    return;
+  }
 
   if (!feeds || !feeds.length) {
     container.innerHTML = '<div class="text-muted text-center">No RSS feeds found on this page</div>';
     return;
   }
 
-  container.innerHTML = feeds.map(f => `
-    <div class="result-item">
-      <input type="checkbox" checked>
-      <i class="ms ms-rss_feed" style="font-size:14px;color:var(--accent)"></i>
-      <span class="title">${escapeHtml(f.title)}</span>
-      <span class="url">${escapeHtml(f.url)}</span>
-    </div>
-  `).join('');
+  // Render detected feeds as a synthetic feed list with checkboxes + add-to-queue button
+  container.innerHTML = `
+    <div style="margin-bottom:6px;font-size:12px;color:var(--text-secondary)">${feeds.length} feeds found</div>
+    ${feeds.map(f => `
+      <div class="result-item">
+        <input type="checkbox" class="rss-cb" data-url="${escapeHtml(f.url || '')}" data-title="${escapeHtml(f.title || '')}" checked>
+        <i class="ms ms-rss_feed" style="font-size:14px;color:var(--accent)"></i>
+        <span class="title">${escapeHtml(f.title || '')}</span>
+        <span class="url">${escapeHtml(f.url || '')}</span>
+      </div>
+    `).join('')}
+    <button class="btn btn-primary btn-full mt-8" id="rss-add-selected">
+      <i class="ms ms-add"></i> ${escapeHtml(t('addToQueue'))}
+    </button>
+  `;
+  wireRssAddSelected(container);
 });
 
 // ═══════════════════════════════════════
 // PARSERS — YouTube Playlist / Links
 // ═══════════════════════════════════════
 $('#yt-extract').addEventListener('click', async () => {
-  const tab = await bg('get-current-tab');
-  if (!tab) return;
   const container = $('#yt-results');
   container.innerHTML = '<div class="text-muted text-center">Extracting...</div>';
-
-  const urls = await bg('extract-yt-urls', { tabId: tab.id });
-  if (!urls.length) {
+  let tab;
+  try {
+    tab = await bg('get-current-tab');
+  } catch (e) {
+    container.innerHTML = `<div class="text-muted text-center">Error: ${escapeHtml(e.message)}</div>`;
+    return;
+  }
+  if (!tab) {
+    container.innerHTML = '<div class="text-muted text-center">No active tab</div>';
+    return;
+  }
+  let urls;
+  try {
+    urls = await bg('extract-yt-urls', { tabId: tab.id });
+  } catch (e) {
+    container.innerHTML = `<div class="text-muted text-center">Error: ${escapeHtml(e.message)}</div>`;
+    return;
+  }
+  if (!Array.isArray(urls) || !urls.length) {
     container.innerHTML = '<div class="text-muted text-center">No YouTube links found</div>';
     return;
   }
@@ -452,28 +682,50 @@ $('#yt-extract').addEventListener('click', async () => {
       </div>
     `).join('')}
     <button class="btn btn-primary btn-full mt-8" id="yt-add-selected">
-      <i class="ms ms-add"></i> Add selected to queue
+      <i class="ms ms-add"></i> ${escapeHtml(t('addToQueue'))}
     </button>
   `;
 
   container.querySelector('#yt-add-selected')?.addEventListener('click', async () => {
-    const checked = container.querySelectorAll('.yt-cb:checked');
-    const items = Array.from(checked).map(cb => ({ url: cb.dataset.url }));
-    if (items.length) {
-      await bg('add-to-queue', { items });
-      showStatus('#home-status', `${items.length} videos added to queue`, 'success');
+    const btn = container.querySelector('#yt-add-selected');
+    try {
+      const checked = container.querySelectorAll('.yt-cb:checked');
+      const items = Array.from(checked).map(cb => ({ url: cb.dataset.url })).filter(it => it.url);
+      if (items.length) {
+        btn.disabled = true;
+        await bg('add-to-queue', { items });
+        showStatus('#home-status', `${items.length} videos added to queue`, 'success');
+        btn.disabled = false;
+      }
+    } catch (err) {
+      showStatus('#home-status', `Error: ${escapeHtml(err.message)}`, 'error');
+      btn.disabled = false;
     }
   });
 });
 
 $('#extract-links').addEventListener('click', async () => {
-  const tab = await bg('get-current-tab');
-  if (!tab) return;
   const container = $('#links-results');
   container.innerHTML = '<div class="text-muted text-center">Extracting...</div>';
-
-  const links = await bg('extract-links', { tabId: tab.id });
-  if (!links.length) {
+  let tab;
+  try {
+    tab = await bg('get-current-tab');
+  } catch (e) {
+    container.innerHTML = `<div class="text-muted text-center">Error: ${escapeHtml(e.message)}</div>`;
+    return;
+  }
+  if (!tab) {
+    container.innerHTML = '<div class="text-muted text-center">No active tab</div>';
+    return;
+  }
+  let links;
+  try {
+    links = await bg('extract-links', { tabId: tab.id });
+  } catch (e) {
+    container.innerHTML = `<div class="text-muted text-center">Error: ${escapeHtml(e.message)}</div>`;
+    return;
+  }
+  if (!Array.isArray(links) || !links.length) {
     container.innerHTML = '<div class="text-muted text-center">No links found</div>';
     return;
   }
@@ -482,23 +734,31 @@ $('#extract-links').addEventListener('click', async () => {
     <div style="margin-bottom:6px;font-size:12px;color:var(--text-secondary)">${links.length} links found</div>
     ${links.slice(0, 50).map(l => `
       <div class="result-item">
-        <input type="checkbox" class="link-cb" data-url="${escapeHtml(l.url)}">
+        <input type="checkbox" class="link-cb" data-url="${escapeHtml(l.url || '')}">
         <i class="ms ms-link" style="font-size:14px"></i>
-        <span class="title">${escapeHtml(l.title)}</span>
+        <span class="title">${escapeHtml(l.title || '')}</span>
       </div>
     `).join('')}
     ${links.length > 50 ? `<div class="text-muted text-center">...and ${links.length - 50} more</div>` : ''}
     <button class="btn btn-primary btn-full mt-8" id="links-add-selected">
-      <i class="ms ms-add"></i> Add selected to queue
+      <i class="ms ms-add"></i> ${escapeHtml(t('addToQueue'))}
     </button>
   `;
 
   container.querySelector('#links-add-selected')?.addEventListener('click', async () => {
-    const checked = container.querySelectorAll('.link-cb:checked');
-    const items = Array.from(checked).map(cb => ({ url: cb.dataset.url }));
-    if (items.length) {
-      await bg('add-to-queue', { items });
-      showStatus('#home-status', `${items.length} links added to queue`, 'success');
+    const btn = container.querySelector('#links-add-selected');
+    try {
+      const checked = container.querySelectorAll('.link-cb:checked');
+      const items = Array.from(checked).map(cb => ({ url: cb.dataset.url })).filter(it => it.url);
+      if (items.length) {
+        btn.disabled = true;
+        await bg('add-to-queue', { items });
+        showStatus('#home-status', `${items.length} links added to queue`, 'success');
+        btn.disabled = false;
+      }
+    } catch (err) {
+      showStatus('#home-status', `Error: ${escapeHtml(err.message)}`, 'error');
+      btn.disabled = false;
     }
   });
 });
@@ -507,9 +767,17 @@ $('#extract-links').addEventListener('click', async () => {
 // QUEUE
 // ═══════════════════════════════════════
 async function loadQueue() {
-  const queue = await bg('get-queue');
   const list = $('#queue-list');
   const count = $('#queue-count');
+  let queue;
+  try {
+    queue = await bg('get-queue');
+  } catch (e) {
+    count.textContent = '0';
+    list.innerHTML = `<div class="text-muted text-center" style="padding:16px">Error: ${escapeHtml(e.message)}</div>`;
+    return;
+  }
+  if (!Array.isArray(queue)) queue = [];
   count.textContent = queue.length;
 
   if (!queue.length) {
@@ -520,18 +788,24 @@ async function loadQueue() {
   list.innerHTML = queue.map((item, i) => `
     <div class="queue-item" data-idx="${i}">
       <i class="ms ms-link" style="font-size:14px;color:var(--accent)"></i>
-      <span class="title" title="${escapeHtml(item.url)}">${escapeHtml(item.title || item.url)}</span>
+      <span class="title" title="${escapeHtml(item.url || '')}">${escapeHtml(item.title || item.url || '')}</span>
       <button class="remove" data-idx="${i}" title="Remove">&times;</button>
     </div>
   `).join('');
 
-  // Remove individual items
+  // Remove individual items via background (atomic; avoids stale-closure
+  // direct-write race that previously could lose items added concurrently).
   list.querySelectorAll('.remove').forEach(btn => {
     btn.addEventListener('click', async () => {
       const idx = parseInt(btn.dataset.idx);
-      queue.splice(idx, 1);
-      await chrome.storage.local.set({ queue });
-      loadQueue();
+      if (Number.isNaN(idx)) return;
+      try {
+        await bg('remove-from-queue', { index: idx });
+        // Re-render from the authoritative queue stored in background
+        loadQueue();
+      } catch (e) {
+        showStatus('#queue-status', `Error: ${escapeHtml(e.message)}`, 'error');
+      }
     });
   });
 }
@@ -541,16 +815,23 @@ $('#process-queue').addEventListener('click', async () => {
   showStatus('#queue-status', 'Processing queue...', 'info', 0);
   try {
     const result = await bg('process-queue', { notebookId: currentNotebookId });
-    showStatus('#queue-status', `Done! ${result.processed} added, ${result.errors || 0} errors`, result.errors ? 'warning' : 'success');
+    const processed = (result && typeof result.processed === 'number') ? result.processed : 0;
+    const errors = (result && typeof result.errors === 'number') ? result.errors : 0;
+    showStatus('#queue-status', `Done! ${processed} added, ${errors} errors`, errors ? 'warning' : 'success');
     loadQueue();
   } catch (e) {
-    showStatus('#queue-status', `Error: ${e.message}`, 'error');
+    showStatus('#queue-status', `Error: ${escapeHtml(e.message)}`, 'error');
   }
 });
 
 $('#clear-queue').addEventListener('click', async () => {
-  await bg('clear-queue');
-  loadQueue();
+  if (!confirm('Clear all queue items?')) return;
+  try {
+    await bg('clear-queue');
+    loadQueue();
+  } catch (e) {
+    showStatus('#queue-status', `Error: ${escapeHtml(e.message)}`, 'error');
+  }
 });
 
 // ═══════════════════════════════════════
@@ -571,7 +852,7 @@ async function loadSources() {
     currentSources = nb.sources || [];
     renderSources();
   } catch (e) {
-    $('#sources-list').innerHTML = `<div class="text-muted text-center" style="padding:16px">Error: ${e.message}</div>`;
+    $('#sources-list').innerHTML = `<div class="text-muted text-center" style="padding:16px">Error: ${escapeHtml(e.message)}</div>`;
   }
 }
 
@@ -583,11 +864,11 @@ function renderSources() {
   }
 
   list.innerHTML = currentSources.map(s => `
-    <div class="source-item" data-source-id="${s.id}">
-      <input type="checkbox" class="source-cb" data-id="${s.id}">
+    <div class="source-item" data-source-id="${escapeHtml(s.id || '')}">
+      <input type="checkbox" class="source-cb" data-id="${escapeHtml(s.id || '')}">
       <i class="ms ${sourceIcons[s.type] || 'ms-help_outline'}"></i>
-      <span class="title" title="${escapeHtml(s.url || '')}">${escapeHtml(s.title)}</span>
-      <span class="type">${s.type}</span>
+      <span class="title" title="${escapeHtml(s.url || '')}">${escapeHtml(s.title || '')}</span>
+      <span class="type">${escapeHtml(s.type || '')}</span>
       ${s.canSync ? '<i class="ms ms-cloud_sync sync-badge" title="Drive source"></i>' : ''}
     </div>
   `).join('');
@@ -626,7 +907,7 @@ $('#delete-selected').addEventListener('click', async () => {
     showStatus('#organize-status', `Deleted ${ids.length} sources`, 'success');
     loadSources();
   } catch (e) {
-    showStatus('#organize-status', `Error: ${e.message}`, 'error');
+    showStatus('#organize-status', `Error: ${escapeHtml(e.message)}`, 'error');
   }
 });
 
@@ -635,10 +916,10 @@ $('#sync-drive').addEventListener('click', async () => {
   showStatus('#organize-status', 'Syncing Drive sources...', 'info', 0);
   try {
     const result = await bg('sync-drive-sources', { notebookId: currentNotebookId });
-    const r = result.results || {};
+    const r = (result && result.results) || {};
     showStatus('#organize-status', `Sync: ${r.synced || 0} updated, ${r.fresh || 0} up-to-date, ${r.skipped || 0} skipped`, 'success');
   } catch (e) {
-    showStatus('#organize-status', `Error: ${e.message}`, 'error');
+    showStatus('#organize-status', `Error: ${escapeHtml(e.message)}`, 'error');
   }
 });
 
@@ -658,10 +939,15 @@ $('#export-sources').addEventListener('click', () => {
 // HISTORY
 // ═══════════════════════════════════════
 async function loadHistory() {
-  const history = await bg('get-history');
   const list = $('#history-list');
-
-  if (!history.length) {
+  let history;
+  try {
+    history = await bg('get-history');
+  } catch (e) {
+    list.innerHTML = `<div class="text-muted text-center" style="padding:16px">Error: ${escapeHtml(e.message)}</div>`;
+    return;
+  }
+  if (!Array.isArray(history) || !history.length) {
     list.innerHTML = '<div class="text-muted text-center" style="padding:16px">No history yet</div>';
     return;
   }
@@ -692,29 +978,52 @@ function renderHistory(history) {
   }).join('');
 }
 
-$('#history-search').addEventListener('input', async (e) => {
+// Debounced history search (avoids spamming background with get-history
+// on every keystroke).
+let historySearchTimer = null;
+$('#history-search').addEventListener('input', (e) => {
   const q = e.target.value.toLowerCase();
-  const history = await bg('get-history');
-  const filtered = q ? history.filter(h =>
-    (h.url || '').toLowerCase().includes(q) ||
-    (h.title || '').toLowerCase().includes(q) ||
-    (h.action || '').toLowerCase().includes(q)
-  ) : history;
-  renderHistory(filtered);
+  if (historySearchTimer) clearTimeout(historySearchTimer);
+  historySearchTimer = setTimeout(async () => {
+    let history;
+    try {
+      history = await bg('get-history');
+    } catch (err) {
+      $('#history-list').innerHTML = `<div class="text-muted text-center" style="padding:16px">Error: ${escapeHtml(err.message)}</div>`;
+      return;
+    }
+    if (!Array.isArray(history)) history = [];
+    const filtered = q ? history.filter(h =>
+      (h.url || '').toLowerCase().includes(q) ||
+      (h.title || '').toLowerCase().includes(q) ||
+      (h.action || '').toLowerCase().includes(q)
+    ) : history;
+    renderHistory(filtered);
+  }, 250);
 });
 
 $('#clear-history').addEventListener('click', async () => {
   if (!confirm('Clear all history?')) return;
-  await bg('clear-history');
-  loadHistory();
+  try {
+    await bg('clear-history');
+    loadHistory();
+  } catch (e) {
+    showStatus('#home-status', `Error: ${escapeHtml(e.message)}`, 'error');
+  }
 });
 
 // ═══════════════════════════════════════
 // SETTINGS
 // ═══════════════════════════════════════
 async function loadSettings() {
-  const sync = await chrome.storage.sync.get(['theme', 'language', 'enableBulkDelete', 'enableSyncDrive', 'enableNotifications']);
-  const local = await chrome.storage.local.get(['addDelay']);
+  let sync, local;
+  try {
+    sync = await chrome.storage.sync.get(['theme', 'language', 'enableBulkDelete', 'enableSyncDrive', 'enableNotifications']);
+    local = await chrome.storage.local.get(['addDelay']);
+  } catch (e) {
+    showStatus('#home-status', `Error loading settings: ${escapeHtml(e.message)}`, 'error');
+    return;
+  }
 
   $('#settings-theme').value = sync.theme || 'light';
   $('#settings-lang').value = sync.language || 'en';
@@ -730,35 +1039,47 @@ async function loadSettings() {
 });
 
 async function saveSettings() {
-  await chrome.storage.sync.set({
-    theme: $('#settings-theme').value,
-    language: $('#settings-lang').value,
-    enableBulkDelete: $('#settings-bulk-delete').checked,
-    enableSyncDrive: $('#settings-sync-drive').checked,
-    enableNotifications: $('#settings-notifications').checked
-  });
-  await chrome.storage.local.set({
-    addDelay: parseInt($('#settings-delay').value) || 2000
-  });
+  try {
+    await chrome.storage.sync.set({
+      theme: $('#settings-theme').value,
+      language: $('#settings-lang').value,
+      enableBulkDelete: $('#settings-bulk-delete').checked,
+      enableSyncDrive: $('#settings-sync-drive').checked,
+      enableNotifications: $('#settings-notifications').checked
+    });
+    await chrome.storage.local.set({
+      addDelay: parseInt($('#settings-delay').value) || 2000
+    });
+  } catch (e) {
+    showStatus('#home-status', `Error saving settings: ${escapeHtml(e.message)}`, 'error');
+    return;
+  }
 
   // Apply language
   if (typeof I18n !== 'undefined') {
-    await I18n.setLanguage($('#settings-lang').value);
+    try {
+      await I18n.setLanguage($('#settings-lang').value);
+    } catch (_) { /* ignore */ }
   }
 }
 
 // Backup
 $('#backup-settings').addEventListener('click', async () => {
-  const sync = await chrome.storage.sync.get(null);
-  const local = await chrome.storage.local.get(null);
-  const backup = { sync, local, version: '3.0', date: new Date().toISOString() };
-  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `nlm-assistant-backup-${Date.now()}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
+  try {
+    const sync = await chrome.storage.sync.get(null);
+    const local = await chrome.storage.local.get(null);
+    const backup = { sync, local, version: '3.1.0', date: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `nlm-assistant-backup-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showStatus('#home-status', 'Backup downloaded', 'success');
+  } catch (e) {
+    showStatus('#home-status', `Error: ${escapeHtml(e.message)}`, 'error');
+  }
 });
 
 // Restore
@@ -766,19 +1087,66 @@ $('#restore-settings').addEventListener('click', () => {
   $('#restore-file').click();
 });
 
+// Allowed keys for each storage area (defense-in-depth against crafted backups)
+const ALLOWED_SYNC_KEYS = new Set([
+  'theme', 'language', 'addDelay', 'enableBulkDelete', 'enableSyncDrive',
+  'settingsNotifications', 'activeAccount'
+]);
+const ALLOWED_LOCAL_KEYS = new Set([
+  'queue', 'history', 'commentsMode', 'commentsLimit', 'commentsReplies',
+  'toolbarPosition', 'toolbarCollapsed', 'toolbarHidden'
+]);
+
+function filterAllowedKeys(obj, allowed) {
+  const out = {};
+  if (!obj || typeof obj !== 'object') return out;
+  for (const k of Object.keys(obj)) {
+    if (allowed.has(k)) out[k] = obj[k];
+  }
+  return out;
+}
+
 $('#restore-file').addEventListener('change', async (e) => {
   const file = e.target.files[0];
+  // Always reset so the same file can be re-selected later
+  e.target.value = '';
   if (!file) return;
+
+  let backup;
   try {
     const text = await file.text();
-    const backup = JSON.parse(text);
-    if (backup.sync) await chrome.storage.sync.set(backup.sync);
-    if (backup.local) await chrome.storage.local.set(backup.local);
-    loadSettings();
-    initTheme();
+    backup = JSON.parse(text);
+  } catch (err) {
+    showStatus('#home-status', `Invalid backup file: ${escapeHtml(err.message)}`, 'error');
+    return;
+  }
+
+  if (!backup || typeof backup !== 'object' || Array.isArray(backup)) {
+    showStatus('#home-status', 'Invalid backup file: expected an object', 'error');
+    return;
+  }
+
+  // Confirm overwrite before touching storage
+  if (!confirm(t('confirmRestore'))) {
+    return;
+  }
+
+  // Schema-validate: only allow known keys; reject anything else silently
+  const syncPayload = filterAllowedKeys(backup.sync, ALLOWED_SYNC_KEYS);
+  const localPayload = filterAllowedKeys(backup.local, ALLOWED_LOCAL_KEYS);
+
+  try {
+    if (Object.keys(syncPayload).length) {
+      await chrome.storage.sync.set(syncPayload);
+    }
+    if (Object.keys(localPayload).length) {
+      await chrome.storage.local.set(localPayload);
+    }
+    await loadSettings();
+    await initTheme();
     showStatus('#home-status', 'Settings restored!', 'success');
   } catch (err) {
-    showStatus('#home-status', 'Invalid backup file', 'error');
+    showStatus('#home-status', `Restore failed: ${escapeHtml(err.message)}`, 'error');
   }
 });
 
@@ -786,8 +1154,36 @@ $('#restore-file').addEventListener('change', async (e) => {
 // INIT
 // ═══════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
-  await initTheme();
-  await initI18n();
-  await loadSettings();
-  await loadAccounts();
+  try {
+    await initTheme();
+  } catch (e) {
+    console.error('initTheme failed:', e);
+  }
+  try {
+    await initI18n();
+  } catch (e) {
+    console.error('initI18n failed:', e);
+  }
+  try {
+    await loadSettings();
+  } catch (e) {
+    console.error('loadSettings failed:', e);
+  }
+  try {
+    await loadAccounts();
+  } catch (e) {
+    console.error('loadAccounts failed:', e);
+  }
+  // Resume progress UI if a YouTube-comments parse is in progress on the
+  // background service worker (MV3 SW outlives popup close/reopen).
+  try {
+    await restoreParseProgress();
+  } catch (e) {
+    console.error('restoreParseProgress failed:', e);
+  }
+});
+
+// Catch unhandled promise rejections so they don't disappear silently.
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled rejection in popup:', event.reason);
 });

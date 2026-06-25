@@ -2,9 +2,10 @@
   "manifest_version": 3,
   "name": "__MSG_extName__",
   "short_name": "NotebookLM Assistant",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "__MSG_extDescription__",
   "default_locale": "en",
+  "minimum_chrome_version": "116",
 
   "permissions": [
     "tabs",
@@ -13,13 +14,19 @@
     "scripting",
     "contextMenus",
     "debugger",
-    "notifications"
+    "notifications",
+    "alarms"
   ],
 
   "host_permissions": [
     "https://notebooklm.google.com/*",
     "https://www.youtube.com/*",
     "https://accounts.google.com/*"
+  ],
+
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
   ],
 
   "commands": {

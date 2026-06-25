@@ -4,7 +4,7 @@
 
 **NotebookLM Assistant** — расширение для Google Chrome, которое расширяет возможности [Google NotebookLM](https://notebooklm.google.com). Оно позволяет быстро добавлять источники из браузера, парсить YouTube-комментарии, массово управлять источниками и синхронизировать файлы Google Drive — всё без необходимости вручную копировать ссылки.
 
-![Chrome](https://img.shields.io/badge/Chrome-MV3-green) ![Version](https://img.shields.io/badge/version-3.0.0-blue) ![License](https://img.shields.io/badge/license-MIT-yellow)
+![Chrome](https://img.shields.io/badge/Chrome-MV3-green) ![Version](https://img.shields.io/badge/version-3.1.0-blue) ![License](https://img.shields.io/badge/license-MIT-yellow)
 
 ---
 
@@ -260,7 +260,7 @@ notebooklm-assistant/
 - EN **English** (по умолчанию)
 - RU **Русский**
 
-Переключение — в **Настройки → Язык**. Применяется ко всему интерфейсу, включая парсинг комментариев.
+Переключение — в **Настройки → Язык**. Применяется к интерфейсу popup (статические надписи) и странице импорта вкладок (`app.html`). Заголовки в Markdown-выводе комментариев YouTube выбираются по языку отдельно от `_locales` (см. `lib/comments-to-md.js`).
 
 ---
 
@@ -304,6 +304,11 @@ notebooklm-assistant/
 | `contextMenus` | Контекстное меню «Добавить в NotebookLM» |
 | `debugger` | Захват страницы как PDF |
 | `notifications` | Chrome-уведомления о действиях |
+| `alarms` | Для отказоустойчивой обработки очереди (crash-safe queue) |
+| `host_permissions`: `https://notebooklm.google.com/*` | Доступ к API NotebookLM |
+| `host_permissions`: `https://www.youtube.com/*` | Парсинг комментариев YouTube |
+| `host_permissions`: `https://accounts.google.com/*` | Обнаружение Google-аккаунтов |
+| `optional_host_permissions`: `http://*/*`, `https://*/*` | Загрузка RSS-лент (запрашивается динамически для каждого источника) |
 
 ---
 
@@ -338,6 +343,15 @@ notebooklm-assistant/
 - Проверьте, что в настройках включена опция «Массовое удаление в NLM».
 - Перезагрузите страницу NotebookLM.
 
+### RSS-лента не загружается
+- При первом добавлении RSS расширение запросит разрешение на доступ к соответствующему домену — **разрешите**.
+- Убедитесь, что URL начинается с `http://` или `https://` и отдаёт корректный RSS/Atom/Sitemap XML.
+- Разрешения можно проверить на `chrome://extensions/` → «Подробнее» → «Разрешения сайтов».
+
+### Активный аккаунт сбрасывается после перезапуска браузера
+- В v3.1.0 выбор активного аккаунта сохраняется в `chrome.storage.sync` и восстанавливается при запуске service worker'а.
+- Если проблема осталась — убедитесь, что Chrome Sync не отключён в настройках браузера.
+
 ---
 
 ## 📄 Лицензия
@@ -355,7 +369,7 @@ MIT License. Свободное использование, модификаци
 
 **NotebookLM Assistant** is a Google Chrome extension that supercharges [Google NotebookLM](https://notebooklm.google.com). It lets you quickly add sources from your browser, parse YouTube comments, bulk-manage sources, and sync Google Drive files — all without manually copying links.
 
-![Chrome](https://img.shields.io/badge/Chrome-MV3-green) ![Version](https://img.shields.io/badge/version-3.0.0-blue) ![License](https://img.shields.io/badge/license-MIT-yellow)
+![Chrome](https://img.shields.io/badge/Chrome-MV3-green) ![Version](https://img.shields.io/badge/version-3.1.0-blue) ![License](https://img.shields.io/badge/license-MIT-yellow)
 
 ---
 
@@ -425,7 +439,7 @@ MIT License. Свободное использование, модификаци
 
 1. **Download** or clone the repository:
    ```bash
-   git clone https://github.com/your-repo/notebooklm-assistant.git
+   git clone https://github.com/cyberclerkua-cmd/notebooklm-assistant-v3.0.git
    ```
 
 2. **Open** the Chrome extensions page:
@@ -611,7 +625,7 @@ The extension supports two languages:
 - 🇬🇧 **English** (default)
 - 🇷🇺 **Russian**
 
-Switch in **Settings → Language**. Applies to the entire interface, including comment parsing output.
+Switch in **Settings → Language**. Applies to the popup UI (static labels) and the tab-import page (`app.html`). YouTube comment Markdown headers are language-aware through a separate mechanism (see `lib/comments-to-md.js`), not through the `_locales` files.
 
 ---
 
@@ -655,6 +669,11 @@ PDF generation uses the `chrome.debugger` API with the Chrome DevTools Protocol 
 | `contextMenus` | "Add to NotebookLM" context menu |
 | `debugger` | Capture pages as PDF |
 | `notifications` | Chrome notifications for actions |
+| `alarms` | For crash-safe queue processing |
+| `host_permissions`: `https://notebooklm.google.com/*` | Access to the NotebookLM API |
+| `host_permissions`: `https://www.youtube.com/*` | YouTube comment parsing |
+| `host_permissions`: `https://accounts.google.com/*` | Google account detection |
+| `optional_host_permissions`: `http://*/*`, `https://*/*` | RSS feed fetching (requested dynamically per-origin) |
 
 ---
 
@@ -689,6 +708,15 @@ Make sure you are signed in to [notebooklm.google.com](https://notebooklm.google
 - Check that "Enable bulk delete on NLM" is turned on in Settings.
 - Reload the NotebookLM page.
 
+### RSS feed doesn't load
+- The first time you add an RSS feed, the extension asks for per-origin host permission — **allow it**.
+- Make sure the URL starts with `http://` or `https://` and returns valid RSS/Atom/Sitemap XML.
+- You can review permissions at `chrome://extensions/` → "Details" → "Site permissions".
+
+### Active account resets after browser restart
+- In v3.1.0 the active account choice is persisted to `chrome.storage.sync` and restored when the service worker starts.
+- If the problem persists, make sure Chrome Sync is not disabled in the browser settings.
+
 ---
 
 ## 📄 License
@@ -698,3 +726,40 @@ MIT License. Free to use, modify, and distribute.
 ---
 
 **NotebookLM Assistant** is not an official Google product. Google, NotebookLM, YouTube, and Google Drive are trademarks of Google LLC.
+
+---
+
+## 📋 Changelog
+
+### v3.1.0
+
+#### Fixed
+- MV3 service worker state persistence — the active Google account is now persisted to `chrome.storage.sync` and restored when the service worker restarts (no longer silently resets to account 0).
+- Context menu duplicate-ID error on extension update — `chrome.contextMenus.removeAll()` is now called before `create()` in `chrome.runtime.onInstalled`.
+- Queue processing is now crash-safe with retry logic via `chrome.alarms`; errored items are marked and retained for retry instead of being dropped.
+- XSS vulnerability in popup `escapeHtml` — single and double quotes are now escaped (`"` → `&quot;`, `'` → `&#39;`).
+- XSS in `comments-to-md.js` `_sanitize` — it no longer decodes `&lt;` / `&gt;` back to raw `<` / `>`; HTML entities are kept encoded.
+- Content script delete now uses exact source IDs (read from the DOM) instead of fuzzy title matching — wrong-source deletes are no longer possible.
+- Multi-account selection now persists across popup opens and across service-worker restarts.
+- RSS parser fully implemented — `parse-rss` command fetches the feed and parses RSS 2.0 / Atom / Sitemap XML; popup requests per-origin host permission before fetching.
+- YouTube comments reply extraction — added a `commentViewModel` handler for the new 2024-2025 InnerTube format (replies were being silently dropped).
+- `generatePdf` now has a 30-second timeout via `Promise.race` (no more infinite debugger banner if a page is unresponsive).
+- `chrome.notifications.create` now respects the `settingsNotifications` toggle.
+- SPA navigation in the content script is debounced — was triggering up to 5 overlapping `setup()` cycles per navigation; now collapsed to 1.
+- Floating toolbar now has Close and Minimize buttons (CSS class `.ms-close` is now actually rendered).
+- `app/app.html` is now localized via `lib/i18n.js` (previously hardcoded English-only).
+- Hardened `escapeHtml`, added `try/catch`, and consistent error handling across popup, app, background, and content script.
+
+#### Added
+- `LICENSE` file (MIT License, copyright 2025 NotebookLM Assistant Contributors).
+- Per-origin host permission request for RSS feeds via `chrome.permissions.request()` (no blanket `<all_urls>` access).
+- `alarms` permission to the manifest for crash-safe queue scheduling.
+- `optional_host_permissions` (`http://*/*`, `https://*/*`) for opt-in RSS feed fetching.
+- `minimum_chrome_version: 116` to the manifest.
+- 27 new i18n keys in both `_locales/en/messages.json` and `_locales/ru/messages.json` (toolbar buttons, app page, RSS, retry/timeout, PDF status, etc.).
+- `tabOrganize` EN locale value corrected from `"Organize"` to `"Sources"` (now matches the README and the RU `"Источники"`).
+- `selectAll` EN locale value corrected from `"Select all"` to `"Select All"` (casing aligned with `deselectAll` and the rest of the toolbar buttons).
+
+---
+
+**NotebookLM Assistant** не является официальным продуктом Google. Google, NotebookLM, YouTube и Google Drive — товарные знаки Google LLC.

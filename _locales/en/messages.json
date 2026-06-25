@@ -8,7 +8,7 @@
   "tabHome": { "message": "Home" },
   "tabParsers": { "message": "Parsers" },
   "tabQueue": { "message": "Queue" },
-  "tabOrganize": { "message": "Organize" },
+  "tabOrganize": { "message": "Sources" },
   "tabHistory": { "message": "History" },
   "tabSettings": { "message": "Settings" },
 
@@ -55,7 +55,7 @@
   "clearQueue": { "message": "Clear" },
 
   "sources": { "message": "Sources" },
-  "selectAll": { "message": "Select all" },
+  "selectAll": { "message": "Select All" },
   "deleteSelected": { "message": "Delete selected" },
   "syncDrive": { "message": "Sync Google Drive" },
   "exportSources": { "message": "Export sources" },
@@ -89,5 +89,33 @@
   "statusSyncing": { "message": "Syncing..." },
 
   "confirmDelete": { "message": "Delete $COUNT$ sources?", "placeholders": { "COUNT": { "content": "$1" } } },
-  "confirmClear": { "message": "Clear all?" }
+  "confirmClear": { "message": "Clear all?" },
+
+  "addToQueue": { "message": "Add to queue" },
+  "rssItemsFound": { "message": "$COUNT$ items found", "placeholders": { "COUNT": { "content": "$1" } } },
+  "rssNoItems": { "message": "No items found in feed" },
+  "rssPermissionNeeded": { "message": "Permission needed to fetch RSS feed" },
+  "confirmRestore": { "message": "Restore settings from file? This will overwrite current settings." },
+  "closePanel": { "message": "Close" },
+  "minimizePanel": { "message": "Minimize" },
+  "tabSources": { "message": "Sources" },
+  "appTitle": { "message": "Tab Manager" },
+  "appSubtitle": { "message": "Select tabs to add to NotebookLM" },
+  "importSelected": { "message": "Import Selected" },
+  "deselectAll": { "message": "Deselect All" },
+  "noTabsFound": { "message": "No open tabs found" },
+  "tabsCount": { "message": "$COUNT$ tabs found", "placeholders": { "COUNT": { "content": "$1" } } },
+  "importing": { "message": "Importing..." },
+  "importDone": { "message": "Successfully imported $COUNT$ tabs", "placeholders": { "COUNT": { "content": "$1" } } },
+  "importError": { "message": "Import failed: $ERROR$", "placeholders": { "ERROR": { "content": "$1" } } },
+  "failedLoadTabs": { "message": "Failed to load tabs: $ERROR$", "placeholders": { "ERROR": { "content": "$1" } } },
+  "retry": { "message": "Retry" },
+  "parseAlreadyRunning": { "message": "A parse is already running. Please wait." },
+  "requestTimeout": { "message": "Request timed out. Please try again." },
+  "sourcesDeleted": { "message": "Deleted $COUNT$ sources", "placeholders": { "COUNT": { "content": "$1" } } },
+  "pdfGenerating": { "message": "Generating PDF and uploading..." },
+  "pdfDone": { "message": "PDF added to notebook" },
+  "pdfError": { "message": "PDF failed: $ERROR$", "placeholders": { "ERROR": { "content": "$1" } } },
+  "manageTabs": { "message": "Manage Tabs" },
+  "permissionDenied": { "message": "Permission denied" }
 }
