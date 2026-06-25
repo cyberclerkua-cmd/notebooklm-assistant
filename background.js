@@ -69,6 +69,9 @@ const NotebookLMAPI = {
   },
 
   // ─── Core RPC method ───
+  // Returns the raw response text. Use rpcChecked() for automatic error
+  // detection — the batchexecute API returns HTTP 200 even when the RPC
+  // itself fails (the error is embedded in the response body as ["er",...]).
   async rpc(rpcId, params, sourcePath = '/') {
     if (!this.tokens.cfb2h) throw new Error('Not authenticated');
 
@@ -93,8 +96,81 @@ const NotebookLMAPI = {
       body
     });
 
-    if (!resp.ok) throw new Error(`RPC ${rpcId} failed: ${resp.status}`);
+    if (!resp.ok) throw new Error(`RPC ${rpcId} failed: HTTP ${resp.status}`);
     return resp.text();
+  },
+
+  // ─── RPC with automatic error detection ───
+  // Calls rpc() then parses the batchexecute response envelope to detect
+  // RPC-level errors. Throws Error with the server's error message if the
+  // RPC failed. Returns { text, parsed } where parsed is the decoded JSON
+  // payload (or null if parsing failed).
+  async rpcChecked(rpcId, params, sourcePath = '/') {
+    const text = await this.rpc(rpcId, params, sourcePath);
+    const parsed = this._parseBatchexecuteResponse(text);
+    if (parsed && parsed.error) {
+      throw new Error(`RPC ${rpcId} error: ${parsed.error}`);
+    }
+    return { text, parsed };
+  },
+
+  // Parse a batchexecute response envelope.
+  // Format: )]}'\n[["wrb.fr","<rpcId>","<json>",...]] or [["er",...]]
+  // Returns { error: string|null, data: any|null, raw: string }
+  _parseBatchexecuteResponse(text) {
+    if (!text) return { error: null, data: null, raw: '' };
+    try {
+      // Strip the XSS guard prefix: )]}'\n
+      let json = text;
+      const xsGuard = json.indexOf(')]}');
+      if (xsGuard === 0) {
+        json = json.slice(xsGuard + 5);
+      }
+      // Remove leading whitespace/newlines
+      json = json.replace(/^\s+/, '');
+      const arr = JSON.parse(json);
+      if (!Array.isArray(arr)) return { error: null, data: null, raw: text };
+
+      // Look for error envelope: ["er", null, null, null, N, [... , "<msg>"]]
+      for (const entry of arr) {
+        if (Array.isArray(entry) && entry[0] === 'er') {
+          // Error structure: ["er", null, null, null, statusCode, ["...","...",...,"<error message>"]]
+          const errData = entry[5];
+          let msg = 'Unknown RPC error';
+          if (Array.isArray(errData)) {
+            // The last non-empty string is usually the message
+            for (let i = errData.length - 1; i >= 0; i--) {
+              if (typeof errData[i] === 'string' && errData[i].trim()) {
+                msg = errData[i];
+                break;
+              }
+            }
+          }
+          return { error: msg, data: null, raw: text };
+        }
+      }
+
+      // Look for success data: ["wrb.fr", "<rpcId>", "<json-string>", ...]
+      let data = null;
+      for (const entry of arr) {
+        if (Array.isArray(entry) && entry[0] === 'wrb.fr' && typeof entry[2] === 'string') {
+          try {
+            data = JSON.parse(entry[2]);
+          } catch (_) {
+            data = entry[2];
+          }
+          break;
+        }
+      }
+      return { error: null, data, raw: text };
+    } catch (e) {
+      // Response isn't valid JSON — can't determine error state.
+      // Check for common error markers in raw text.
+      if (text.includes('"er"') || text.includes('error')) {
+        return { error: 'RPC returned an error (unparseable response)', data: null, raw: text };
+      }
+      return { error: null, data: null, raw: text };
+    }
   },
 
   // ─── List Google accounts ───
@@ -201,29 +277,127 @@ const NotebookLMAPI = {
     const regularUrls = urls.filter(u => !this.isYouTubeUrl(u));
     const youtubeUrls = urls.filter(u => this.isYouTubeUrl(u));
 
-    // Add regular URLs
+    // Shared request-options wrapper (verified against notebooklm-py RPC
+    // reference, live-captured 2026-06-15):
+    //   [2, null, null, [1, null, null, null, null, null, null, null, null, null, [1]]]
+    const wrapper = [2, null, null, [1, null, null, null, null, null, null, null, null, null, [1]]];
+
+    // Add regular URLs — 11-element source spec, URL at position [2]
     if (regularUrls.length) {
       const sources = regularUrls.map(u =>
-        [null, null, [u], null, null, null, null, null]
+        [null, null, [u], null, null, null, null, null, null, null, 1]
       );
-      await this.rpc('izAoDd', [sources, notebookId, [2], null, null], `/notebook/${notebookId}`);
+      await this.rpc('izAoDd', [sources, notebookId, wrapper], `/notebook/${notebookId}`);
     }
 
-    // Add YouTube URLs (different format: 11-element array, URL at position [7])
+    // Add YouTube URLs — 11-element source spec, URL at position [7]
     for (const u of youtubeUrls) {
       const source = [
         [null, null, null, null, null, null, null, [u], null, null, 1]
       ];
-      await this.rpc('izAoDd', [
-        source, notebookId, [2],
-        [1, null, null, null, null, null, null, null, null, null, [1]]
-      ], `/notebook/${notebookId}`);
+      await this.rpc('izAoDd', [source, notebookId, wrapper], `/notebook/${notebookId}`);
     }
   },
 
-  async addTextSource(notebookId, text, title = 'Imported content') {
-    const source = [[[null, title, text]]];
-    return this.rpc('izAoDd', [source, notebookId, [2], null, null], `/notebook/${notebookId}`);
+  // Add a text/pasted source to a notebook.
+  //
+  // The izAoDd RPC expects the first param to be a LIST of source descriptors.
+  // Each descriptor is an 8-element array (same length as URL descriptors) so
+  // that NotebookLM recognises it as a valid source:
+  //
+  //   URL source:  [null, null,  [url], null, null, null, null, null]
+  //   Text source: [null, title, [text], null, null, null, null, null]
+  //                ^     ^      ^
+  //                |     |      text content wrapped in a 1-element array
+  //                |     source title (string)
+  //                always null
+  //
+  // The text goes at index 2 (same position as the URL in URL sources),
+  // wrapped in a single-element array. The title goes at index 1.
+  //
+  // Add a pasted-text source to a notebook via the izAoDd RPC.
+  //
+  // SOURCE FORMAT — verified against notebooklm-py RPC reference
+  // (live-captured 2026-06-15 from a real Chrome session):
+  //
+  //   params = [
+  //     [[null, [title, content], null, 2, null, null, null, null, null, null, 1]],
+  //     notebookId,
+  //     [2, null, null, [1, null, null, null, null, null, null, null, null, null, [1]]]
+  //   ]
+  //
+  // The source spec is an 11-element array:
+  //   [0]:  null
+  //   [1]:  [title, content]  — 2-element array with title string and text content
+  //   [2]:  null
+  //   [3]:  2                 — PASTED_TEXT source-type code (4=PASTED_TEXT in
+  //                             the SourceType map, but the RPC uses 2 here)
+  //   [4-9]: null
+  //   [10]: 1                 — trailing flag
+  //
+  // The third param is the shared request-options wrapper:
+  //   [2, null, null, [1, null, null, null, null, null, null, null, null, null, [1]]]
+  //
+  // Previous broken attempts:
+  //   v3.0:     [[[null, title, text]]]                          — wrong nesting
+  //   fix #1:   [[null, title, text]]                            — 3-elem descriptor
+  //   fix #2:   [[null, title, [text], null, null, null, null, null]] — 8-elem, title at [1]
+  //   fix #3:   [[null, null, [null, title, text], null, ...]]   — 8-elem, 3-elem at [2]
+  //   CORRECT:  [[null, [title, text], null, 2, null, null, null, null, null, null, 1]]
+  async addTextSource(notebookId, text, title = 'Imported content', opts = {}) {
+    // 11-element source spec: [title, content] at position 1, type code 2 at position 3.
+    const source = [[null, [title, text], null, 2, null, null, null, null, null, null, 1]];
+    // Shared request-options wrapper (live-captured format).
+    const wrapper = [2, null, null, [1, null, null, null, null, null, null, null, null, null, [1]]];
+
+    // Pre-send source count for verification (enabled by default for text
+    // sources because they are prone to silent format failures).
+    const verify = opts.verify !== false;
+    let beforeCount = null;
+    if (verify) {
+      try {
+        const nbBefore = await this.getNotebook(notebookId);
+        beforeCount = nbBefore.sources ? nbBefore.sources.length : 0;
+      } catch (_) { /* non-fatal */ }
+    }
+
+    const { parsed, raw } = await this.rpcChecked(
+      'izAoDd',
+      [source, notebookId, wrapper],
+      `/notebook/${notebookId}`
+    );
+
+    // Try to extract a newly-created source ID from the RPC response.
+    let newSourceId = null;
+    if (parsed && parsed.data) {
+      const uuidRe = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+      const found = JSON.stringify(parsed.data).match(uuidRe);
+      if (found) newSourceId = found[0];
+    }
+
+    // Verify the source was actually created by re-checking the notebook's
+    // source count. This catches silent format rejections.
+    if (verify && beforeCount !== null) {
+      try {
+        // Small delay to let NotebookLM's backend commit the new source.
+        await new Promise(r => setTimeout(r, 800));
+        const nbAfter = await this.getNotebook(notebookId);
+        const afterCount = nbAfter.sources ? nbAfter.sources.length : 0;
+        console.log(`[addTextSource] Verify: before=${beforeCount}, after=${afterCount}, sourceId=${newSourceId}`);
+        if (afterCount <= beforeCount && !newSourceId) {
+          throw new Error(
+            `Source was not created. Notebook source count did not increase ` +
+            `(before=${beforeCount}, after=${afterCount}). ` +
+            `The text-source format may be incompatible with this version of NotebookLM.`
+          );
+        }
+      } catch (verifyErr) {
+        if (verifyErr.message.includes('Source was not created')) throw verifyErr;
+        console.warn('[addTextSource] Verification check failed:', verifyErr.message);
+      }
+    }
+
+    return { raw, sourceId: newSourceId };
   },
 
   // ─── PDF upload (3-step SCOTTY protocol) ───
@@ -492,26 +666,74 @@ async function doParseComments(notebookId, videoId, tabId, authuser, parseId) {
     const parts = CommentsToMd.format(metadata, comments, { lang });
     if (cancelToken.cancelled) return;
 
+    // ── Guard: don't add empty sources ──
+    // If 0 comments were fetched (e.g. comments disabled, or the new
+    // commentViewModel format wasn't parsed), parts[] will still contain 1
+    // part with just the header. Adding that would create a "source" with no
+    // actual comment content — the user would see it as an empty source.
+    if (comments.length === 0) {
+      throw new Error(
+        `No comments were fetched from YouTube (video may have comments ` +
+        `disabled, or the comment section format is unsupported). ` +
+        `Source was NOT added to the notebook.`
+      );
+    }
+
     // Phase 4: send to NLM — use captured authuser (not the global, which may
     // have been reset by SW restart).
     parseState.progress.phase = 'sending';
     await checkpointParseState();
     console.log(`[YT-Comments] Phase 4: sending ${parts.length} part(s) to notebook ${notebookId}`);
     await NotebookLMAPI.getTokens(authuser);
+
+    // Get source count BEFORE adding, for end-to-end verification.
+    let sourcesBefore = null;
+    try {
+      const nb = await NotebookLMAPI.getNotebook(notebookId);
+      sourcesBefore = nb.sources ? nb.sources.length : 0;
+      console.log(`[YT-Comments] Notebook has ${sourcesBefore} sources before adding`);
+    } catch (e) {
+      console.warn('[YT-Comments] Could not get source count before:', e.message);
+    }
+
+    let sentCount = 0;
+    const createdSourceIds = [];
     for (let i = 0; i < parts.length; i++) {
       if (cancelToken.cancelled) return;
       console.log(`[YT-Comments] Sending part ${i + 1}/${parts.length}: title="${parts[i].title}", text length=${parts[i].text.length}`);
       try {
-        const resp = await NotebookLMAPI.addTextSource(notebookId, parts[i].text, parts[i].title);
-        // Check for error markers in the RPC response
-        if (resp && (resp.includes('"error"') || resp.includes('er\"'))) {
-          console.warn(`[YT-Comments] Part ${i + 1} response may contain error:`, resp.substring(0, 300));
-        } else {
-          console.log(`[YT-Comments] Part ${i + 1} sent OK, response length=${resp?.length || 0}`);
-        }
+        // addTextSource now uses rpcChecked() (throws on RPC errors) AND
+        // verifies the source was actually created by checking the notebook's
+        // source count before/after. opts.verify=true enables this check.
+        const result = await NotebookLMAPI.addTextSource(
+          notebookId, parts[i].text, parts[i].title, { verify: true }
+        );
+        if (result.sourceId) createdSourceIds.push(result.sourceId);
+        console.log(`[YT-Comments] Part ${i + 1} created OK, sourceId=${result.sourceId || 'unknown'}`);
+        sentCount++;
       } catch (partErr) {
         console.error(`[YT-Comments] Failed to send part ${i + 1}:`, partErr);
-        throw partErr;
+        throw new Error(`Failed to add comment part ${i + 1}/${parts.length} to notebook: ${partErr.message}`);
+      }
+    }
+
+    // Final verification: check source count increased.
+    if (sourcesBefore !== null) {
+      try {
+        const nbAfter = await NotebookLMAPI.getNotebook(notebookId);
+        const sourcesAfter = nbAfter.sources ? nbAfter.sources.length : 0;
+        console.log(`[YT-Comments] Verify: sources before=${sourcesBefore}, after=${sourcesAfter}`);
+        if (sourcesAfter <= sourcesBefore) {
+          throw new Error(
+            `Verification failed: notebook source count did not increase ` +
+            `(before=${sourcesBefore}, after=${sourcesAfter}). ` +
+            `The text source format may be incompatible with this NotebookLM version. ` +
+            `Try adding a regular URL source to confirm the notebook is accessible.`
+          );
+        }
+      } catch (verifyErr) {
+        if (verifyErr.message.includes('Verification failed')) throw verifyErr;
+        console.warn('[YT-Comments] Final verification failed:', verifyErr.message);
       }
     }
 
@@ -520,9 +742,17 @@ async function doParseComments(notebookId, videoId, tabId, authuser, parseId) {
       commentCount: comments.length,
       totalComments: metadata.commentCount,
       partCount: parts.length,
+      sentPartCount: sentCount,
       videoTitle: metadata.title
     };
+    await addHistory({
+      action: 'add_youtube_comments',
+      title: metadata.title || videoId,
+      notebookId,
+      count: comments.length
+    });
     await checkpointParseState();
+    console.log(`[YT-Comments] Done: ${sentCount}/${parts.length} parts sent, ${comments.length} comments`);
   } catch (e) {
     console.error('doParseComments error:', e);
     parseState.progress.phase = 'error';
@@ -1196,9 +1426,9 @@ async function handleMessage(request, sender) {
 
     case 'add-text-source': {
       await NotebookLMAPI.getTokens(au);
-      await NotebookLMAPI.addTextSource(params.notebookId, params.text, params.title);
+      const result = await NotebookLMAPI.addTextSource(params.notebookId, params.text, params.title, { verify: true });
       await addHistory({ action: 'add_text', title: params.title, notebookId: params.notebookId });
-      return { success: true };
+      return { success: true, sourceId: result.sourceId };
     }
 
     case 'add-as-pdf': {

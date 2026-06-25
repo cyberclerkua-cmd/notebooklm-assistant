@@ -444,21 +444,30 @@ function startParsePolling() {
     if (!status.active && status.progress.phase === 'done') {
       stopParsePolling();
       fill.style.width = '100%';
-      text.textContent = `Done! ${status.result?.commentCount || 0} comments in ${status.result?.partCount || 0} parts`;
+      const r = status.result || {};
+      const sentParts = r.sentPartCount !== undefined ? r.sentPartCount : r.partCount;
+      text.innerHTML = `<span style="color:var(--success,#16a34a)">✓ Done!</span> ${r.commentCount || 0} comments, ${sentParts}/${r.partCount || 0} parts added to notebook`;
+      showStatus('#home-status', `✓ ${r.commentCount || 0} comments added to notebook (${sentParts} part${sentParts !== 1 ? 's' : ''})`, 'success');
       setTimeout(() => {
         $('#parse-progress').style.display = 'none';
         $('#start-parse').style.display = '';
-      }, 5000);
+      }, 6000);
       return;
     }
 
     if (!status.active && (status.progress.phase === 'error' || status.progress.phase === 'cancelled')) {
       stopParsePolling();
-      text.textContent = status.error ? `Error: ${escapeHtml(status.error.message || '')}` : 'Cancelled';
+      const errMsg = status.error ? (status.error.message || 'Unknown error') : 'Cancelled';
+      if (status.progress.phase === 'error') {
+        text.innerHTML = `<span style="color:var(--danger,#dc2626)">✗ Error: ${escapeHtml(errMsg)}</span>`;
+        showStatus('#home-status', `✗ Comments not added: ${escapeHtml(errMsg)}`, 'error');
+      } else {
+        text.textContent = 'Cancelled';
+      }
       setTimeout(() => {
         $('#parse-progress').style.display = 'none';
         $('#start-parse').style.display = '';
-      }, 3000);
+      }, 5000);
       return;
     }
 
