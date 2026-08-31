@@ -732,7 +732,7 @@ MIT License. Free to use, modify, and distribute.
 ## 📋 Changelog
 
 
-### v3.2.0
+### v3.3.7
 
 **Сервис обновился: NotebookLM → Gemini Notebook**
 
