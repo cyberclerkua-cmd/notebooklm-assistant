@@ -4,7 +4,7 @@
 
 **Gemini Notebook Assistant** — расширение для Google Chrome, которое расширяет возможности [Google Gemini Notebook](https://notebooklm.google.com). Оно позволяет быстро добавлять источники из браузера, парсить YouTube-комментарии, массово управлять источниками и синхронизировать файлы Google Drive — всё без необходимости вручную копировать ссылки.
 
-![Chrome](https://img.shields.io/badge/Chrome-MV3-green) ![Version](https://img.shields.io/badge/version-3.2.0-blue) ![License](https://img.shields.io/badge/license-MIT-yellow)
+![Chrome](https://img.shields.io/badge/Chrome-MV3-green) ![Version](https://img.shields.io/badge/version-3.3.7-blue) ![License](https://img.shields.io/badge/license-MIT-yellow)
 
 ---
 
@@ -369,7 +369,7 @@ MIT License. Свободное использование, модификаци
 
 **Gemini Notebook Assistant** is a Google Chrome extension that supercharges [Google Gemini Notebook](https://notebooklm.google.com). It lets you quickly add sources from your browser, parse YouTube comments, bulk-manage sources, and sync Google Drive files — all without manually copying links.
 
-![Chrome](https://img.shields.io/badge/Chrome-MV3-green) ![Version](https://img.shields.io/badge/version-3.2.0-blue) ![License](https://img.shields.io/badge/license-MIT-yellow)
+![Chrome](https://img.shields.io/badge/Chrome-MV3-green) ![Version](https://img.shields.io/badge/version-3.3.7-blue) ![License](https://img.shields.io/badge/license-MIT-yellow)
 
 ---
 
