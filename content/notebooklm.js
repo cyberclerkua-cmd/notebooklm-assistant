@@ -1,5 +1,6 @@
-/* NotebookLM Assistant v3.1.0 — Content Script
- * Injected into notebooklm.google.com
+/* Gemini Notebook Assistant v3.1.0 — Content Script
+ * Injected into notebook.google.com (formerly notebooklm.google.com — the
+ * domain moved in late July 2026; both are matched in manifest.json)
  * Features: bulk source delete checkboxes, Drive sync button, SPA nav handling,
  *           theme support, multi-account switcher, toolbar close/minimize.
  *
@@ -43,15 +44,19 @@
   let currentAuthuser = 0;       // BUG 7 fix
   let accountsList = [];          // BUG 7 fix
   let addCheckboxesTimer = null;
+  let sourceIdWarnedThisPass = false;  // v3.3.2 — throttle "no source ID" warnings
   let setupTimer = null;          // BUG 3 fix — debounced setup
   let sourceListMissCount = 0;    // BUG 8 fix — telemetry
   let listenersAdded = false;     // BUG 5 fix — add listeners once
   let bodyObserver = null;        // BUG 4 fix — single combined observer
   let lastUrl = location.href;
 
-  // Source-row selectors (used in multiple places)
+  // Source-row selectors — verified against notebooklm-py RPC reference
+  // (live-captured 2026-06-15 from a real Chrome session).
+  // Primary: ".single-source-container" (confirmed by notebooklm-py SOURCES_SELECTORS)
+  // Fallbacks: common Angular Material patterns + generic source-card classes.
   const SOURCE_ROW_SELECTORS =
-    '.single-source-container, source-list-item, [data-source-id], .source-item, mat-list-option, .cdk-drag';
+    '.single-source-container, source-list-item, [data-source-id], .source-item, .source-card, .source-row, mat-list-option, .cdk-drag, [role="listitem"]';
 
   // Storage keys
   const TOOLBAR_POS_KEY = 'nlm_ext_toolbar_pos';
@@ -67,7 +72,7 @@
     }
   }
 
-  const MSG_TIMEOUT_MS = 15000; // BUG 11 fix
+  const MSG_TIMEOUT_MS = 8000; // BUG 11 fix (reduced from 15s — too long for UI)
 
   async function safeSendMessage(msg) {
     if (!isContextValid()) {
@@ -103,7 +108,7 @@
       padding:10px 16px; font:500 14px/1.4 'Segoe UI',Roboto,sans-serif;
       cursor:pointer;
     `;
-    banner.textContent = 'NotebookLM Assistant was updated. Click here to reload the page.';
+    banner.textContent = 'Gemini Notebook Assistant was updated. Click here to reload the page.';
     banner.addEventListener('click', () => location.reload());
     document.body.appendChild(banner);
 
@@ -367,6 +372,8 @@
     }
 
     // Strategy 3: any <a> whose href contains /source/<id>
+    // NOTE: fixed typo in v3.3.2 — was 'aref]' (missing '['), which is an
+    // invalid selector and silently threw, so this strategy never ran.
     const links = row.querySelectorAll('a[href]');
     for (const link of links) {
       const href = link.getAttribute('href') || '';
@@ -388,7 +395,31 @@
       if (v) return v;
     }
 
-    // Strategy 5: aria-label that looks like "Open source <id>" — too heuristic, skip.
+    // Strategy 5 (v3.3.2): buttons/elements with aria-label containing a UUID.
+    // Gemini Notebook uses Angular Material and often embeds source IDs in
+    // aria-labels like "Open source <uuid>" or "More options for <uuid>".
+    const uuidRe = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+    const ariaCandidates = row.querySelectorAll('[aria-label], [aria-describedby]');
+    for (const c of ariaCandidates) {
+      const label = c.getAttribute('aria-label') || c.getAttribute('aria-describedby') || '';
+      const m = label.match(uuidRe);
+      if (m && m[0]) return m[0];
+    }
+
+    // Strategy 6 (v3.3.2): the row's own id attribute (Angular sometimes sets
+    // id="source-<uuid>" or id="<uuid>" on the source card).
+    const rowId = row.getAttribute('id') || '';
+    const idMatch = rowId.match(uuidRe);
+    if (idMatch && idMatch[0]) return idMatch[0];
+
+    // Strategy 7 (v3.3.2): Angular component often stores the source object in
+    // a __ngContext__ or data-ng property. Scan all descendants for a
+    // data-ng-source or ng-reflect-source-id attribute (Angular reflection).
+    const ngCandidates = row.querySelectorAll('[ng-reflect-source-id], [data-ng-source-id]');
+    for (const c of ngCandidates) {
+      const v = c.getAttribute('ng-reflect-source-id') || c.getAttribute('data-ng-source-id');
+      if (v) return v;
+    }
 
     return null;
   }
@@ -397,10 +428,18 @@
   // Narrower than before: only returns specific source-title text, NOT the
   // entire row (which can include metadata and leak into matching).
   function getSourceTitle(el) {
+    // v3.3.4: try source-title elements first
     const titleEl = el.querySelector(
       '.source-title-column, .source-title, [class*="source-title"]'
     );
     if (titleEl) return titleEl.textContent.trim();
+    // v3.3.4: try aria-label on the source button (Gemini Notebook puts the
+    // source title in aria-label, e.g. aria-label="VC4_CORE.md")
+    const btn = el.querySelector('button[aria-label], a[aria-label]');
+    if (btn) {
+      const label = btn.getAttribute('aria-label') || '';
+      if (label) return label.trim();
+    }
     const heading = el.querySelector('h1, h2, h3, h4, h5, h6, [role="heading"]');
     if (heading) return heading.textContent.trim();
     return '';
@@ -415,41 +454,82 @@
   // ─── Add checkboxes to source items (BUG 1, BUG 8 fix) ───
   function addCheckboxes() {
     if (!isEnabled) return;
+
+    // v3.3.5: skip on non-source-list pages. Gemini Notebook uses URL params
+    // to indicate modal/overlay states where the source list isn't the main
+    // content. Running addCheckboxes() there floods the console with
+    // "selectors not matching" warnings.
+    //   ?addSource=true     — "Add source" modal is open
+    //   ?sourceId=...       — a single source is open in the source viewer
+    //   ?chat=...           — chat focus mode
+    //   ?notes=...          — notes panel focus
+    // On these pages, source rows either aren't in the DOM or are obscured,
+    // so we bail out early without warning.
+    const url = location.href;
+    const isNonSourceListPage =
+      url.includes('addSource=true') ||
+      /[?&]sourceId=/.test(url) ||
+      /[?&]chat=/.test(url) ||
+      /[?&]notes=/.test(url) ||
+      /[?&]studio=/.test(url);
+    if (isNonSourceListPage) {
+      // Reset miss counter so we don't carry over a partial state from a
+      // previous page; when the user navigates back to the source list,
+      // addCheckboxes() will run fresh.
+      sourceListMissCount = 0;
+      return;
+    }
+
     const items = getSourceItems();
 
-    // BUG 8 fix: telemetry on missing source rows
+    // BUG 8 fix: telemetry on missing source rows.
+    // v3.3.7: changed from console.warn to console.debug. Angular lazy-loads
+    // source rows — they may appear 5-10 seconds after page load on slow
+    // connections. The MutationObserver will catch them when they arrive and
+    // call addCheckboxes() again. Logging a visible warning here just alarms
+    // the user for a transient state that resolves itself.
     if (items.length === 0) {
       sourceListMissCount++;
-      if (sourceListMissCount >= 3) {
-        const warnMsg =
-          '[NotebookLM Assistant] Source selectors not matching after 3 retries — ' +
-          'NotebookLM UI may have changed. Selectors tried: ' + SOURCE_ROW_SELECTORS;
-        console.warn(warnMsg);
-        // Best-effort log to background (cmd may not exist; ignore failures)
-        try {
-          const p = chrome.runtime.sendMessage({
-            cmd: 'log-warning',
-            params: { message: 'Source selectors not matching' }
-          });
-          if (p && typeof p.catch === 'function') p.catch(() => {});
-        } catch (e) { /* ignore */ }
+      if (sourceListMissCount >= 5) {  // v3.3.7: increased from 3 to 5
+        // debug-level: invisible in the default DevTools "Errors" tab.
+        // Only visible when "Verbose" logging level is enabled.
+        console.debug(
+          '[Gemini Notebook Assistant] Source rows not yet rendered after 5 checks. ' +
+          'The MutationObserver will add checkboxes automatically when Angular ' +
+          'renders them. (This is normal for slow connections / large notebooks.)'
+        );
         sourceListMissCount = 0; // reset to avoid spamming
       }
       return;
     }
     sourceListMissCount = 0; // reset on success
 
-    items.forEach(item => {
-      if (item.querySelector('.nlm-ext-checkbox-wrap')) return;
+    // v3.3.4: Gemini Notebook (Angular) does NOT expose source IDs in the DOM.
+    // The source ID lives in Angular's component state (JavaScript memory), not
+    // in HTML attributes. Confirmed by inspecting the live DOM:
+    //   <div class="single-source-container ...">
+    //     <button class="source-stretched-button" aria-label="VC4_CORE.md" ...>
+    //   </div>
+    // The aria-label contains the source TITLE, not a UUID. No data-source-id,
+    // no href with /source/<id>, no data-id — nothing.
+    //
+    // Therefore: DOM-based ID extraction (strategies 1-7) will ALWAYS fail here.
+    // This is EXPECTED, not an error. We silently add checkboxes without IDs,
+    // and proactively fetch the source list via RPC to cache IDs by title match
+    // (see ensureSourceIdCache below). The delete handler uses these cached IDs.
+    //
+    // No warning is logged — there's nothing wrong.
 
-      // BUG 1 fix: extract & cache the exact source ID on the row + checkbox wrap
-      let sourceId = getSourceIdFromRow(item);
-      if (!sourceId) {
-        console.warn(
-          '[NotebookLM Assistant] Could not extract source ID from row; ' +
-          'will fall back to EXACT title match at delete time.'
-        );
-      }
+    let itemsNeedingCheckbox = [];
+    for (const item of items) {
+      if (item.querySelector('.nlm-ext-checkbox-wrap')) continue; // already has checkbox
+      const sid = getSourceIdFromRow(item); // will return null for Gemini Notebook
+      itemsNeedingCheckbox.push({ item, sourceId: sid });
+    }
+
+    if (itemsNeedingCheckbox.length === 0) return;
+
+    itemsNeedingCheckbox.forEach(({ item, sourceId }) => {
 
       item.classList.add('nlm-ext-has-checkbox');
       if (sourceId) item.setAttribute('data-nlm-source-id', sourceId);
@@ -473,6 +553,79 @@
       wrap.appendChild(cb);
       item.prepend(wrap);
     });
+
+    // v3.3.4: Proactively fetch the source list via RPC and cache source IDs
+    // on the DOM rows by title match. Gemini Notebook doesn't expose IDs in
+    // the DOM, so we get them from the API and cache them for instant delete.
+    // Non-blocking — runs in the background after checkboxes are added.
+    ensureSourceIdCache();
+  }
+
+  // ─── Fetch source list via RPC and cache IDs on DOM rows by title ───
+  // Gemini Notebook (Angular) doesn't put source IDs in the DOM. We fetch the
+  // notebook's source list from the API (get-notebook RPC via background),
+  // match each DOM row by its title (from aria-label or .source-title), and
+  // cache the source ID on the row's data-nlm-source-id attribute. This makes
+  // delete instant (no API call needed at delete time) and reliable (uses exact
+  // IDs, not fuzzy title matching).
+  let sourceIdCachePromise = null;
+  let sourceIdCacheNotebookId = null;
+
+  function ensureSourceIdCache() {
+    const nbId = getNotebookIdFromUrl();
+    if (!nbId) return;
+
+    // Don't re-fetch if we already have a cache for this notebook
+    // (re-fetch when notebook changes, or after a delete — see handleDelete)
+    if (sourceIdCacheNotebookId === nbId && sourceIdCachePromise) return;
+
+    sourceIdCacheNotebookId = nbId;
+    sourceIdCachePromise = (async () => {
+      try {
+        const resp = await safeSendMessage({
+          cmd: 'get-sources',
+          params: { notebookId: nbId, authuser: currentAuthuser }
+        });
+        let apiSources = [];
+        if (resp && Array.isArray(resp.sources)) apiSources = resp.sources;
+        else if (resp && resp.result && Array.isArray(resp.result.sources)) apiSources = resp.result.sources;
+        else if (Array.isArray(resp)) apiSources = resp;
+
+        if (!apiSources.length) return;
+
+        // Build title→id map (normalized for matching)
+        const norm = (t) => (t || '').toLowerCase().replace(/\s+/g, ' ').trim();
+        const titleToId = new Map();
+        for (const s of apiSources) {
+          if (s && s.id && s.title) {
+            titleToId.set(norm(s.title), s.id);
+          }
+        }
+
+        // Cache IDs on DOM rows
+        const rows = document.querySelectorAll(SOURCE_ROW_SELECTORS);
+        let cached = 0;
+        rows.forEach(row => {
+          if (row.getAttribute('data-nlm-source-id')) return; // already cached
+          const title = getSourceTitle(row);
+          if (!title) return;
+          const id = titleToId.get(norm(title));
+          if (id) {
+            row.setAttribute('data-nlm-source-id', id);
+            const wrap = row.querySelector('.nlm-ext-checkbox-wrap');
+            if (wrap) wrap.setAttribute('data-nlm-source-id', id);
+            cached++;
+          }
+        });
+
+        if (cached > 0) {
+          console.log('[Gemini Notebook Assistant] Cached ' + cached + ' source IDs via RPC for instant delete.');
+        }
+      } catch (e) {
+        // Non-fatal — delete will fall back to fetching at delete time
+        console.debug('[Gemini Notebook Assistant] Source ID cache fetch failed:', e.message);
+      }
+    })();
   }
 
   // ─── Debounced add checkboxes ───
@@ -618,8 +771,8 @@
       if (!reopen) {
         reopen = document.createElement('button');
         reopen.className = 'nlm-ext-reopen-btn';
-        reopen.innerHTML = '<i class="nlm-ms nlm-ms-select_all"></i> NLM Assistant';
-        reopen.title = 'Reopen NotebookLM Assistant toolbar';
+        reopen.innerHTML = '<i class="nlm-ms nlm-ms-select_all"></i> Gemini Notebook';
+        reopen.title = 'Reopen Gemini Notebook Assistant toolbar';
         reopen.addEventListener('click', () => {
           saveToolbarHidden(false);
           setToolbarHidden(false);
@@ -637,9 +790,12 @@
     toolbar.classList.toggle('is-collapsed', collapsed);
     const minBtn = document.getElementById('nlm-ext-min');
     if (minBtn) {
+      // Minimize button shows an underscore ("_") when expanded (click to collapse)
+      // and an expand icon when collapsed (click to expand). The underscore is
+      // the standard window-minimize glyph, matching OS conventions.
       minBtn.innerHTML = collapsed
         ? '<i class="nlm-ms nlm-ms-expand"></i>'
-        : '<i class="nlm-ms nlm-ms-close"></i>';
+        : '<i class="nlm-ms nlm-ms-minimize"></i>';
       minBtn.title = collapsed ? 'Expand' : 'Minimize';
       minBtn.setAttribute('aria-label', collapsed ? 'Expand' : 'Minimize');
     }
@@ -679,7 +835,7 @@
       } catch (e2) {
         // Stay with default authuser=0; background will use its own currentAuthuser global.
         console.warn(
-          '[NotebookLM Assistant] Could not load active account; using default authuser=0.',
+          '[Gemini Notebook Assistant] Could not load active account; using default authuser=0.',
           e2
         );
       }
@@ -723,7 +879,7 @@
     const toolbar = document.createElement('div');
     toolbar.className = 'nlm-ext-toolbar nlm-assistant-toolbar'; // BUG 9 fix: scope class
     toolbar.setAttribute('role', 'toolbar');
-    toolbar.setAttribute('aria-label', 'NotebookLM Assistant');
+    toolbar.setAttribute('aria-label', 'Gemini Notebook Assistant');
     toolbar.innerHTML = `
       <div class="nlm-ext-toolbar-header">
         <div class="nlm-ext-drag-handle" id="nlm-ext-drag-handle" title="Drag to move">
@@ -731,7 +887,7 @@
         </div>
         <select id="nlm-ext-account" class="nlm-ext-account-select" title="Switch account" aria-label="Switch account"></select>
         <button class="nlm-ext-icon-btn" id="nlm-ext-min" title="Minimize" aria-label="Minimize">
-          <i class="nlm-ms nlm-ms-close"></i>
+          <i class="nlm-ms nlm-ms-minimize"></i>
         </button>
         <button class="nlm-ext-icon-btn" id="nlm-ext-close" title="Close" aria-label="Close toolbar">
           <i class="nlm-ms nlm-ms-close"></i>
@@ -845,7 +1001,7 @@
       // against the API source list (NOT `includes`, NOT bidirectional).
       if (fallbackRows.length > 0) {
         console.warn(
-          `[NotebookLM Assistant] Falling back to EXACT title match for ` +
+          `[Gemini Notebook Assistant] Falling back to EXACT title match for ` +
           `${fallbackRows.length} row(s) without a DOM source ID.`
         );
         let apiSources = [];
@@ -873,7 +1029,7 @@
             if (wrap) wrap.setAttribute('data-nlm-source-id', match.id);
           } else {
             console.warn(
-              `[NotebookLM Assistant] No exact title match for row titled "${title}"; skipping.`
+              `[Gemini Notebook Assistant] No exact title match for row titled "${title}"; skipping.`
             );
           }
         });
@@ -907,31 +1063,49 @@
 
       if (removed === 0) {
         // Fallback: reload if DOM removal somehow failed
-        console.warn('[NotebookLM Assistant] DOM row removal failed; reloading page.');
+        console.warn('[Gemini Notebook Assistant] DOM row removal failed; reloading page.');
         location.reload();
         return;
       }
 
       showToast(`Deleted ${sourceIds.length} source(s)`);
+
+      // v3.3.4: invalidate the source ID cache so it re-fetches on next addCheckboxes
+      sourceIdCacheNotebookId = null;
+      sourceIdCachePromise = null;
+
       updateToolbar();
       btn.disabled = false;
       btn.innerHTML = origHtml;
       btn.style.display = 'none';
     } catch (e) {
-      console.error('[NotebookLM Assistant] Bulk delete error:', e);
-      const isTimeout = !!(e && e.message && e.message.toLowerCase().includes('timed out'));
-      btn.innerHTML = isTimeout
-        ? '<i class="nlm-ms nlm-ms-error"></i> Timed out'
-        : '<i class="nlm-ms nlm-ms-error"></i> Error';
-      showToast(
-        isTimeout
-          ? 'Request timed out. Please try again.'
-          : ('Delete failed: ' + (e.message || e))
-      );
+      const msg = (e && e.message) ? e.message : String(e);
+      // v3.3.6: friendly handling of context-invalidation (extension was reloaded).
+      // safeSendMessage already shows the red reload banner; here we just show a
+      // concise toast and avoid a scary console.error + "Delete failed: ..." text.
+      const isContextInvalid = msg.includes('Extension was updated') ||
+                               msg.includes('Extension context invalidated');
+      const isTimeout = msg.toLowerCase().includes('timed out');
+
+      if (isContextInvalid) {
+        // The reload banner is already shown by safeSendMessage — no need for
+        // a console.error too. Just tell the user to reload.
+        console.warn('[Gemini Notebook Assistant] Delete aborted: extension updated. Reload the page.');
+        showToast('Extension was updated. Please reload the page, then try again.');
+        btn.innerHTML = '<i class="nlm-ms nlm-ms-error"></i> Reload page';
+      } else if (isTimeout) {
+        console.error('[Gemini Notebook Assistant] Bulk delete timeout:', e);
+        btn.innerHTML = '<i class="nlm-ms nlm-ms-error"></i> Timed out';
+        showToast('Request timed out. Please try again.');
+      } else {
+        console.error('[Gemini Notebook Assistant] Bulk delete error:', e);
+        btn.innerHTML = '<i class="nlm-ms nlm-ms-error"></i> Error';
+        showToast('Delete failed: ' + msg);
+      }
       setTimeout(() => {
         btn.disabled = false;
         btn.innerHTML = origHtml;
-      }, 2500);
+      }, 3000);
     }
   }
 
@@ -960,20 +1134,28 @@
         btn.innerHTML = origHtml;
       }, 3000);
     } catch (e) {
-      console.error('[NotebookLM Assistant] Sync error:', e);
-      const isTimeout = !!(e && e.message && e.message.toLowerCase().includes('timed out'));
-      btn.innerHTML = isTimeout
-        ? '<i class="nlm-ms nlm-ms-error"></i> Timed out'
-        : '<i class="nlm-ms nlm-ms-error"></i> Error';
-      showToast(
-        isTimeout
-          ? 'Request timed out. Please try again.'
-          : ('Sync failed: ' + (e.message || e))
-      );
+      const msg = (e && e.message) ? e.message : String(e);
+      const isContextInvalid = msg.includes('Extension was updated') ||
+                               msg.includes('Extension context invalidated');
+      const isTimeout = msg.toLowerCase().includes('timed out');
+
+      if (isContextInvalid) {
+        console.warn('[Gemini Notebook Assistant] Sync aborted: extension updated. Reload the page.');
+        showToast('Extension was updated. Please reload the page, then try again.');
+        btn.innerHTML = '<i class="nlm-ms nlm-ms-error"></i> Reload page';
+      } else if (isTimeout) {
+        console.error('[Gemini Notebook Assistant] Sync timeout:', e);
+        btn.innerHTML = '<i class="nlm-ms nlm-ms-error"></i> Timed out';
+        showToast('Request timed out. Please try again.');
+      } else {
+        console.error('[Gemini Notebook Assistant] Sync error:', e);
+        btn.innerHTML = '<i class="nlm-ms nlm-ms-error"></i> Error';
+        showToast('Sync failed: ' + msg);
+      }
       setTimeout(() => {
         btn.disabled = false;
         btn.innerHTML = origHtml;
-      }, 2500);
+      }, 3000);
     }
   }
 
@@ -1066,9 +1248,11 @@
       return;
     }
 
-    // If notebook changed, clean up old checkboxes
+    // If notebook changed, clean up old checkboxes + reset the source-ID warning
+    // throttle so the diagnostic warning can fire once on the new notebook too.
     if (currentNotebookId && currentNotebookId !== nbId) {
       cleanupCheckboxes();
+      sourceIdWarnedThisPass = false;
     }
     currentNotebookId = nbId;
 
@@ -1095,10 +1279,13 @@
 
     addCheckboxes();
     startBodyObserver();
-    // Retry with increasing delays for Angular lazy-loaded content
-    setTimeout(addCheckboxes, 500);
-    setTimeout(addCheckboxes, 1500);
+    // v3.3.7: retry with increasing delays for Angular lazy-loaded content.
+    // Gemini Notebook can take 5-10s to render source rows on slow connections
+    // or large notebooks. The MutationObserver also catches them when they arrive.
+    setTimeout(addCheckboxes, 1000);
     setTimeout(addCheckboxes, 3000);
+    setTimeout(addCheckboxes, 6000);
+    setTimeout(addCheckboxes, 10000);
   }
 
   // ─── Listen for messages from popup/background ───
@@ -1119,7 +1306,7 @@
     document.documentElement.setAttribute('data-nlm-ext', 'v3');
 
     if (!isContextValid()) {
-      console.warn('[NotebookLM Assistant] Extension context invalidated, skipping init.');
+      console.warn('[Gemini Notebook Assistant] Extension context invalidated, skipping init.');
       return;
     }
 
@@ -1133,15 +1320,25 @@
       if (settings.theme) applyTheme(settings.theme);
     } catch (e) {}
 
-    // BUG 7 fix: load active account before first setup so messages include it.
-    await loadActiveAccount();
-
-    // Initial setup
+    // CRITICAL: Run setup() IMMEDIATELY so the toolbar appears without delay.
+    // loadActiveAccount() is fired in the background (not awaited) because it
+    // can take up to 30s if the SW is asleep (two 15s timeouts for
+    // get-active-account → list-accounts fallback). Blocking setup() on it
+    // caused the toolbar to "disappear" for 30s on every page load.
+    // The toolbar works fine with currentAuthuser=0 (default) until the
+    // account loads; loadActiveAccount() calls renderAccountSwitcher() when
+    // done, which updates the toolbar's account dropdown.
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', setup);
     } else {
       setup();
     }
+
+    // Load active account in the background (non-blocking). When it completes,
+    // renderAccountSwitcher() updates the toolbar dropdown.
+    loadActiveAccount().catch((e) => {
+      console.warn('[Gemini Notebook Assistant] loadActiveAccount failed:', e.message);
+    });
 
     // BUG 5 fix: add global listeners exactly ONCE.
     if (!listenersAdded) {

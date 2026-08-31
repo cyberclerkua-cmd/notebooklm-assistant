@@ -1,4 +1,4 @@
-/* NotebookLM Assistant v3.1.0 — Content Script icons
+/* Gemini Notebook Assistant v3.1.0 — Content Script icons
  * Scoped under .nlm-assistant-toolbar (and .nlm-ext-reopen-btn) to avoid
  * collisions with host-page elements. The host page uses `.ms` for Material
  * Symbols; we use the `.nlm-ms` prefix instead.
@@ -53,4 +53,9 @@
 .nlm-ms-expand {
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M7.41%2018.59L8.83%2020%2012%2016.83%2015.17%2020l1.41-1.41L12%2014l-4.59%204.59zM16.59%205.41L15.17%204%2012%207.17%208.83%204%207.41%205.41%2012%2010l4.59-4.59z%22%2F%3E%3C%2Fsvg%3E");
   mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M7.41%2018.59L8.83%2020%2012%2016.83%2015.17%2020l1.41-1.41L12%2014l-4.59%204.59zM16.59%205.41L15.17%204%2012%207.17%208.83%204%207.41%205.41%2012%2010l4.59-4.59z%22%2F%3E%3C%2Fsvg%3E");
+}
+/* New in v3.3.1 — minimize icon (underscore/horizontal line at bottom, like standard window minimize) */
+.nlm-ms-minimize {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M6%2019h12v2H6z%22%2F%3E%3C%2Fsvg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M6%2019h12v2H6z%22%2F%3E%3C%2Fsvg%3E");
 }

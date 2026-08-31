@@ -1,4 +1,4 @@
-/* NotebookLM Assistant v3.0 — Popup Logic */
+/* Gemini Notebook Assistant v3.0 — Popup Logic */
 
 // ─── Helpers ───
 const $ = sel => document.querySelector(sel);
@@ -92,8 +92,9 @@ function applyTheme(theme) {
   const headerSel = $('#theme-select');
   if (headerSel) headerSel.value = theme;
   $('#settings-theme').value = theme;
-  // Sync to content script
-  chrome.tabs.query({ url: 'https://notebooklm.google.com/*' }, tabs => {
+  // Sync to content script (query both old and new domains — Google moved
+  // notebooklm.google.com → notebook.google.com in late July 2026)
+  chrome.tabs.query({ url: ['https://notebook.google.com/*', 'https://notebooklm.google.com/*'] }, tabs => {
     tabs.forEach(tab => {
       chrome.tabs.sendMessage(tab.id, { cmd: 'set-theme', theme }).catch(() => {});
     });
@@ -481,7 +482,7 @@ function startParsePolling() {
       fetching: `Fetching comments... ${fetched}${total ? '/' + total : ''}`,
       fetching_replies: `Fetching replies... ${fetched}`,
       formatting: 'Formatting to Markdown...',
-      sending: 'Sending to NotebookLM...'
+      sending: 'Sending to Gemini Notebook...'
     };
     text.textContent = phases[status.progress.phase] || status.progress.phase;
   }, 1000);

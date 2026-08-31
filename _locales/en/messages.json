@@ -1,121 +1,370 @@
 {
-  "extName": { "message": "NotebookLM Assistant" },
-  "extDescription": { "message": "Add web pages, YouTube videos, comments, and PDFs to Google NotebookLM with one click." },
-  "cmdAddPage": { "message": "Add current page to NotebookLM" },
-  "cmdAddPdf": { "message": "Save current page as PDF to NotebookLM" },
-
-  "popupTitle": { "message": "NotebookLM Assistant" },
-  "tabHome": { "message": "Home" },
-  "tabParsers": { "message": "Parsers" },
-  "tabQueue": { "message": "Queue" },
-  "tabOrganize": { "message": "Sources" },
-  "tabHistory": { "message": "History" },
-  "tabSettings": { "message": "Settings" },
-
-  "account": { "message": "Account" },
-  "selectAccount": { "message": "Select account" },
-  "notebook": { "message": "Notebook" },
-  "selectNotebook": { "message": "Select notebook" },
-  "createNotebook": { "message": "Create notebook" },
-  "newNotebookTitle": { "message": "New notebook title" },
-  "create": { "message": "Create" },
-
-  "addCurrentPage": { "message": "Add page" },
-  "addAsPdf": { "message": "Save PDF" },
-  "addUrl": { "message": "Add URL" },
-  "enterUrl": { "message": "Enter URL..." },
-  "add": { "message": "Add" },
-  "bulkImport": { "message": "Bulk import URLs" },
-  "bulkPlaceholder": { "message": "Paste URLs, one per line..." },
-  "addAll": { "message": "Add all" },
-  "importTabs": { "message": "Import open tabs" },
-
-  "parseComments": { "message": "Parse YouTube Comments" },
-  "commentsMode": { "message": "Sort by" },
-  "commentsTop": { "message": "Top comments" },
-  "commentsNewest": { "message": "Newest first" },
-  "commentsLimit": { "message": "Max comments" },
-  "commentsIncludeReplies": { "message": "Include replies" },
-  "startParsing": { "message": "Start parsing" },
-  "cancelParsing": { "message": "Cancel" },
-  "parsingProgress": { "message": "Fetching comments..." },
-  "parsingDone": { "message": "Done! $COUNT$ comments sent.", "placeholders": { "COUNT": { "content": "$1" } } },
-
-  "rssImport": { "message": "RSS / Sitemap import" },
-  "rssPlaceholder": { "message": "Enter RSS, Atom, or Sitemap URL..." },
-  "rssParse": { "message": "Parse" },
-  "rssAutoDetect": { "message": "Auto-detect RSS on current page" },
-  "youtubePlaylist": { "message": "YouTube Playlist / Channel" },
-  "ytExtract": { "message": "Extract URLs from current tab" },
-  "extractLinks": { "message": "Extract links from page" },
-
-  "queueEmpty": { "message": "Queue is empty" },
-  "queueItems": { "message": "$COUNT$ items in queue", "placeholders": { "COUNT": { "content": "$1" } } },
-  "processQueue": { "message": "Process queue" },
-  "clearQueue": { "message": "Clear" },
-
-  "sources": { "message": "Sources" },
-  "selectAll": { "message": "Select All" },
-  "deleteSelected": { "message": "Delete selected" },
-  "syncDrive": { "message": "Sync Google Drive" },
-  "exportSources": { "message": "Export sources" },
-  "tags": { "message": "Tags" },
-  "folders": { "message": "Folders" },
-
-  "noHistory": { "message": "No history yet" },
-  "clearHistory": { "message": "Clear history" },
-  "searchHistory": { "message": "Search history..." },
-
-  "settingsTheme": { "message": "Theme" },
-  "themeLight": { "message": "Light" },
-  "themeDark": { "message": "Dark" },
-  "settingsLanguage": { "message": "Language" },
-  "settingsDelay": { "message": "Delay between adds (ms)" },
-  "settingsBulkDelete": { "message": "Enable bulk delete on NLM" },
-  "settingsSyncDrive": { "message": "Show Drive sync button" },
-  "settingsNotifications": { "message": "Show notifications" },
-  "settingsBackup": { "message": "Backup settings" },
-  "settingsRestore": { "message": "Restore settings" },
-
-  "contextMenuAdd": { "message": "Add to NotebookLM" },
-  "contextMenuPdf": { "message": "Save as PDF to NotebookLM" },
-
-  "statusAdding": { "message": "Adding..." },
-  "statusAdded": { "message": "Added!" },
-  "statusError": { "message": "Error" },
-  "statusCreating": { "message": "Creating..." },
-  "statusCreated": { "message": "Created!" },
-  "statusDeleting": { "message": "Deleting..." },
-  "statusSyncing": { "message": "Syncing..." },
-
-  "confirmDelete": { "message": "Delete $COUNT$ sources?", "placeholders": { "COUNT": { "content": "$1" } } },
-  "confirmClear": { "message": "Clear all?" },
-
-  "addToQueue": { "message": "Add to queue" },
-  "rssItemsFound": { "message": "$COUNT$ items found", "placeholders": { "COUNT": { "content": "$1" } } },
-  "rssNoItems": { "message": "No items found in feed" },
-  "rssPermissionNeeded": { "message": "Permission needed to fetch RSS feed" },
-  "confirmRestore": { "message": "Restore settings from file? This will overwrite current settings." },
-  "closePanel": { "message": "Close" },
-  "minimizePanel": { "message": "Minimize" },
-  "tabSources": { "message": "Sources" },
-  "appTitle": { "message": "Tab Manager" },
-  "appSubtitle": { "message": "Select tabs to add to NotebookLM" },
-  "importSelected": { "message": "Import Selected" },
-  "deselectAll": { "message": "Deselect All" },
-  "noTabsFound": { "message": "No open tabs found" },
-  "tabsCount": { "message": "$COUNT$ tabs found", "placeholders": { "COUNT": { "content": "$1" } } },
-  "importing": { "message": "Importing..." },
-  "importDone": { "message": "Successfully imported $COUNT$ tabs", "placeholders": { "COUNT": { "content": "$1" } } },
-  "importError": { "message": "Import failed: $ERROR$", "placeholders": { "ERROR": { "content": "$1" } } },
-  "failedLoadTabs": { "message": "Failed to load tabs: $ERROR$", "placeholders": { "ERROR": { "content": "$1" } } },
-  "retry": { "message": "Retry" },
-  "parseAlreadyRunning": { "message": "A parse is already running. Please wait." },
-  "requestTimeout": { "message": "Request timed out. Please try again." },
-  "sourcesDeleted": { "message": "Deleted $COUNT$ sources", "placeholders": { "COUNT": { "content": "$1" } } },
-  "pdfGenerating": { "message": "Generating PDF and uploading..." },
-  "pdfDone": { "message": "PDF added to notebook" },
-  "pdfError": { "message": "PDF failed: $ERROR$", "placeholders": { "ERROR": { "content": "$1" } } },
-  "manageTabs": { "message": "Manage Tabs" },
-  "permissionDenied": { "message": "Permission denied" }
+  "extName": {
+    "message": "Gemini Notebook Assistant"
+  },
+  "extDescription": {
+    "message": "Add web pages, YouTube videos, comments, and PDFs to Google Gemini Notebook with one click."
+  },
+  "cmdAddPage": {
+    "message": "Add current page to Gemini Notebook"
+  },
+  "cmdAddPdf": {
+    "message": "Save current page as PDF to Gemini Notebook"
+  },
+  "popupTitle": {
+    "message": "Gemini Notebook Assistant"
+  },
+  "tabHome": {
+    "message": "Home"
+  },
+  "tabParsers": {
+    "message": "Parsers"
+  },
+  "tabQueue": {
+    "message": "Queue"
+  },
+  "tabOrganize": {
+    "message": "Sources"
+  },
+  "tabHistory": {
+    "message": "History"
+  },
+  "tabSettings": {
+    "message": "Settings"
+  },
+  "account": {
+    "message": "Account"
+  },
+  "selectAccount": {
+    "message": "Select account"
+  },
+  "notebook": {
+    "message": "Notebook"
+  },
+  "selectNotebook": {
+    "message": "Select notebook"
+  },
+  "createNotebook": {
+    "message": "Create notebook"
+  },
+  "newNotebookTitle": {
+    "message": "New notebook title"
+  },
+  "create": {
+    "message": "Create"
+  },
+  "addCurrentPage": {
+    "message": "Add page"
+  },
+  "addAsPdf": {
+    "message": "Save PDF"
+  },
+  "addUrl": {
+    "message": "Add URL"
+  },
+  "enterUrl": {
+    "message": "Enter URL..."
+  },
+  "add": {
+    "message": "Add"
+  },
+  "bulkImport": {
+    "message": "Bulk import URLs"
+  },
+  "bulkPlaceholder": {
+    "message": "Paste URLs, one per line..."
+  },
+  "addAll": {
+    "message": "Add all"
+  },
+  "importTabs": {
+    "message": "Import open tabs"
+  },
+  "parseComments": {
+    "message": "Parse YouTube Comments"
+  },
+  "commentsMode": {
+    "message": "Sort by"
+  },
+  "commentsTop": {
+    "message": "Top comments"
+  },
+  "commentsNewest": {
+    "message": "Newest first"
+  },
+  "commentsLimit": {
+    "message": "Max comments"
+  },
+  "commentsIncludeReplies": {
+    "message": "Include replies"
+  },
+  "startParsing": {
+    "message": "Start parsing"
+  },
+  "cancelParsing": {
+    "message": "Cancel"
+  },
+  "parsingProgress": {
+    "message": "Fetching comments..."
+  },
+  "parsingDone": {
+    "message": "Done! $COUNT$ comments sent.",
+    "placeholders": {
+      "COUNT": {
+        "content": "$1"
+      }
+    }
+  },
+  "rssImport": {
+    "message": "RSS / Sitemap import"
+  },
+  "rssPlaceholder": {
+    "message": "Enter RSS, Atom, or Sitemap URL..."
+  },
+  "rssParse": {
+    "message": "Parse"
+  },
+  "rssAutoDetect": {
+    "message": "Auto-detect RSS on current page"
+  },
+  "youtubePlaylist": {
+    "message": "YouTube Playlist / Channel"
+  },
+  "ytExtract": {
+    "message": "Extract URLs from current tab"
+  },
+  "extractLinks": {
+    "message": "Extract links from page"
+  },
+  "queueEmpty": {
+    "message": "Queue is empty"
+  },
+  "queueItems": {
+    "message": "$COUNT$ items in queue",
+    "placeholders": {
+      "COUNT": {
+        "content": "$1"
+      }
+    }
+  },
+  "processQueue": {
+    "message": "Process queue"
+  },
+  "clearQueue": {
+    "message": "Clear"
+  },
+  "sources": {
+    "message": "Sources"
+  },
+  "selectAll": {
+    "message": "Select All"
+  },
+  "deleteSelected": {
+    "message": "Delete selected"
+  },
+  "syncDrive": {
+    "message": "Sync Google Drive"
+  },
+  "exportSources": {
+    "message": "Export sources"
+  },
+  "tags": {
+    "message": "Tags"
+  },
+  "folders": {
+    "message": "Folders"
+  },
+  "noHistory": {
+    "message": "No history yet"
+  },
+  "clearHistory": {
+    "message": "Clear history"
+  },
+  "searchHistory": {
+    "message": "Search history..."
+  },
+  "settingsTheme": {
+    "message": "Theme"
+  },
+  "themeLight": {
+    "message": "Light"
+  },
+  "themeDark": {
+    "message": "Dark"
+  },
+  "settingsLanguage": {
+    "message": "Language"
+  },
+  "settingsDelay": {
+    "message": "Delay between adds (ms)"
+  },
+  "settingsBulkDelete": {
+    "message": "Enable bulk delete on NLM"
+  },
+  "settingsSyncDrive": {
+    "message": "Show Drive sync button"
+  },
+  "settingsNotifications": {
+    "message": "Show notifications"
+  },
+  "settingsBackup": {
+    "message": "Backup settings"
+  },
+  "settingsRestore": {
+    "message": "Restore settings"
+  },
+  "contextMenuAdd": {
+    "message": "Add to Gemini Notebook"
+  },
+  "contextMenuPdf": {
+    "message": "Save as PDF to Gemini Notebook"
+  },
+  "statusAdding": {
+    "message": "Adding..."
+  },
+  "statusAdded": {
+    "message": "Added!"
+  },
+  "statusError": {
+    "message": "Error"
+  },
+  "statusCreating": {
+    "message": "Creating..."
+  },
+  "statusCreated": {
+    "message": "Created!"
+  },
+  "statusDeleting": {
+    "message": "Deleting..."
+  },
+  "statusSyncing": {
+    "message": "Syncing..."
+  },
+  "confirmDelete": {
+    "message": "Delete $COUNT$ sources?",
+    "placeholders": {
+      "COUNT": {
+        "content": "$1"
+      }
+    }
+  },
+  "confirmClear": {
+    "message": "Clear all?"
+  },
+  "addToQueue": {
+    "message": "Add to queue"
+  },
+  "rssItemsFound": {
+    "message": "$COUNT$ items found",
+    "placeholders": {
+      "COUNT": {
+        "content": "$1"
+      }
+    }
+  },
+  "rssNoItems": {
+    "message": "No items found in feed"
+  },
+  "rssPermissionNeeded": {
+    "message": "Permission needed to fetch RSS feed"
+  },
+  "confirmRestore": {
+    "message": "Restore settings from file? This will overwrite current settings."
+  },
+  "closePanel": {
+    "message": "Close"
+  },
+  "minimizePanel": {
+    "message": "Minimize"
+  },
+  "tabSources": {
+    "message": "Sources"
+  },
+  "appTitle": {
+    "message": "Tab Manager"
+  },
+  "appSubtitle": {
+    "message": "Select tabs to add to Gemini Notebook"
+  },
+  "importSelected": {
+    "message": "Import Selected"
+  },
+  "deselectAll": {
+    "message": "Deselect All"
+  },
+  "noTabsFound": {
+    "message": "No open tabs found"
+  },
+  "tabsCount": {
+    "message": "$COUNT$ tabs found",
+    "placeholders": {
+      "COUNT": {
+        "content": "$1"
+      }
+    }
+  },
+  "importing": {
+    "message": "Importing..."
+  },
+  "importDone": {
+    "message": "Successfully imported $COUNT$ tabs",
+    "placeholders": {
+      "COUNT": {
+        "content": "$1"
+      }
+    }
+  },
+  "importError": {
+    "message": "Import failed: $ERROR$",
+    "placeholders": {
+      "ERROR": {
+        "content": "$1"
+      }
+    }
+  },
+  "failedLoadTabs": {
+    "message": "Failed to load tabs: $ERROR$",
+    "placeholders": {
+      "ERROR": {
+        "content": "$1"
+      }
+    }
+  },
+  "retry": {
+    "message": "Retry"
+  },
+  "parseAlreadyRunning": {
+    "message": "A parse is already running. Please wait."
+  },
+  "requestTimeout": {
+    "message": "Request timed out. Please try again."
+  },
+  "sourcesDeleted": {
+    "message": "Deleted $COUNT$ sources",
+    "placeholders": {
+      "COUNT": {
+        "content": "$1"
+      }
+    }
+  },
+  "pdfGenerating": {
+    "message": "Generating PDF and uploading..."
+  },
+  "pdfDone": {
+    "message": "PDF added to notebook"
+  },
+  "pdfError": {
+    "message": "PDF failed: $ERROR$",
+    "placeholders": {
+      "ERROR": {
+        "content": "$1"
+      }
+    }
+  },
+  "manageTabs": {
+    "message": "Manage Tabs"
+  },
+  "permissionDenied": {
+    "message": "Permission denied"
+  }
 }

@@ -1,10 +1,10 @@
-# NotebookLM Assistant
+# Gemini Notebook Assistant
 
-> Добавляйте веб-страницы, видео YouTube, комментарии и PDF в Google NotebookLM одним кликом.
+> Добавляйте веб-страницы, видео YouTube, комментарии и PDF в Google Gemini Notebook одним кликом.
 
-**NotebookLM Assistant** — расширение для Google Chrome, которое расширяет возможности [Google NotebookLM](https://notebooklm.google.com). Оно позволяет быстро добавлять источники из браузера, парсить YouTube-комментарии, массово управлять источниками и синхронизировать файлы Google Drive — всё без необходимости вручную копировать ссылки.
+**Gemini Notebook Assistant** — расширение для Google Chrome, которое расширяет возможности [Google Gemini Notebook](https://notebooklm.google.com). Оно позволяет быстро добавлять источники из браузера, парсить YouTube-комментарии, массово управлять источниками и синхронизировать файлы Google Drive — всё без необходимости вручную копировать ссылки.
 
-![Chrome](https://img.shields.io/badge/Chrome-MV3-green) ![Version](https://img.shields.io/badge/version-3.1.0-blue) ![License](https://img.shields.io/badge/license-MIT-yellow)
+![Chrome](https://img.shields.io/badge/Chrome-MV3-green) ![Version](https://img.shields.io/badge/version-3.2.0-blue) ![License](https://img.shields.io/badge/license-MIT-yellow)
 
 ---
 
@@ -22,7 +22,7 @@
   - [Настройки](#настройки)
 - [Горячие клавиши](#-горячие-клавиши)
 - [Контекстное меню](#-контекстное-меню)
-- [Плавающая панель на NotebookLM](#-плавающая-панель-на-notebooklm)
+- [Плавающая панель на Gemini Notebook](#-плавающая-панель-на-notebooklm)
 - [Поддержка нескольких аккаунтов](#-поддержка-нескольких-аккаунтов)
 - [Локализация](#-локализация)
 - [Технические детали](#-технические-детали)
@@ -34,7 +34,7 @@
 
 ### Добавление источников
 - **Добавить текущую страницу** — одним кликом отправить URL активной вкладки в выбранный блокнот
-- **Сохранить как PDF** — захватить страницу целиком (с изображениями и стилями) как PDF и загрузить в NotebookLM
+- **Сохранить как PDF** — захватить страницу целиком (с изображениями и стилями) как PDF и загрузить в Gemini Notebook
 - **Добавить URL вручную** — ввести любой URL для добавления
 - **Массовый импорт** — вставить список URL (по одному на строку) и добавить все разом
 - **Импорт открытых вкладок** — выбрать нужные вкладки из списка всех открытых и отправить в блокнот
@@ -51,8 +51,8 @@
 - **Синхронизация Google Drive** — обновить все Google Docs/Sheets/Slides источники до актуальной версии
 - **Экспорт** — выгрузить список источников в текстовый файл
 
-### Плавающая панель на NotebookLM
-- **Select All / Deselect All** — чекбоксы для каждого источника прямо на странице NotebookLM
+### Плавающая панель на Gemini Notebook
+- **Select All / Deselect All** — чекбоксы для каждого источника прямо на странице Gemini Notebook
 - **Массовое удаление** — удалить выбранные источники через API
 - **Sync Drive** — синхронизация Drive-файлов без открытия popup
 - **Перетаскивание** — панель можно перемещать в любое место экрана (позиция сохраняется)
@@ -61,7 +61,7 @@
 - **Очередь** — добавить URL в очередь для последовательной обработки с задержкой между запросами
 - **История** — журнал всех действий с возможностью поиска
 - **Горячие клавиши** — `Alt+Shift+N` (добавить страницу), `Alt+Shift+P` (сохранить PDF)
-- **Контекстное меню** — правый клик → «Добавить в NotebookLM» / «Сохранить PDF»
+- **Контекстное меню** — правый клик → «Добавить в Gemini Notebook» / «Сохранить PDF»
 - **Светлая / тёмная тема** — синхронизируется между popup и плавающей панелью
 - **Русский и английский** язык интерфейса
 - **Резервное копирование** — экспорт/импорт всех настроек в JSON
@@ -74,7 +74,7 @@
 
 1. **Скачайте** или клонируйте репозиторий:
    ```bash
-   git clone https://github.com/cyberclerkua-cmd/notebooklm-assistant.git
+   git clone https://github.com/cyberclerkua-cmd/notebooklm-assistant-v3.0.git
    ```
 
 2. **Откройте** страницу расширений Chrome:
@@ -102,7 +102,7 @@
 2. **Кликните** на иконку расширения — оно автоматически обнаружит ваши аккаунты и загрузит список блокнотов.
 3. **Выберите блокнот** и начинайте добавлять источники!
 
-> ⚠️ **Важно:** Расширение работает с вашей текущей сессией Google. Вы должны быть авторизованы в NotebookLM в том же браузере.
+> ⚠️ **Важно:** Расширение работает с вашей текущей сессией Google. Вы должны быть авторизованы в Gemini Notebook в том же браузере.
 
 ---
 
@@ -229,12 +229,12 @@ notebooklm-assistant/
 
 Правый клик на странице или ссылке:
 
-- **Добавить в NotebookLM** — добавить страницу/ссылку в очередь
-- **Сохранить PDF в NotebookLM** — захватить страницу как PDF
+- **Добавить в Gemini Notebook** — добавить страницу/ссылку в очередь
+- **Сохранить PDF в Gemini Notebook** — захватить страницу как PDF
 
 ---
 
-## 🔲 Плавающая панель на NotebookLM
+## 🔲 Плавающая панель на Gemini Notebook
 
 При открытии любого блокнота на `notebooklm.google.com` в правом нижнем углу появляется плавающая панель инструментов:
 
@@ -267,7 +267,7 @@ notebooklm-assistant/
 ## 🔧 Технические детали
 
 ### API
-Расширение взаимодействует с NotebookLM через **reverse-engineered RPC API** (`batchexecute`). Публичного API у NotebookLM нет. Используемые RPC-методы:
+Расширение взаимодействует с Gemini Notebook через **reverse-engineered RPC API** (`batchexecute`). Публичного API у Gemini Notebook нет. Используемые RPC-методы:
 
 | RPC ID | Назначение |
 |--------|-----------|
@@ -287,7 +287,7 @@ notebooklm-assistant/
 - Получать все комментарии, включая ответы
 
 ### PDF-захват
-Для создания PDF используется `chrome.debugger` API с протоколом Chrome DevTools (`Page.printToPDF`). Затем файл загружается через SCOTTY upload protocol NotebookLM.
+Для создания PDF используется `chrome.debugger` API с протоколом Chrome DevTools (`Page.printToPDF`). Затем файл загружается через SCOTTY upload protocol Gemini Notebook.
 
 ### Хранение данных
 - `chrome.storage.sync` — настройки (тема, язык, переключатели)
@@ -301,11 +301,11 @@ notebooklm-assistant/
 | `storage` | Сохранение настроек, очереди, истории |
 | `activeTab` | Доступ к активной вкладке для добавления |
 | `scripting` | Внедрение скриптов для парсинга YouTube |
-| `contextMenus` | Контекстное меню «Добавить в NotebookLM» |
+| `contextMenus` | Контекстное меню «Добавить в Gemini Notebook» |
 | `debugger` | Захват страницы как PDF |
 | `notifications` | Chrome-уведомления о действиях |
 | `alarms` | Для отказоустойчивой обработки очереди (crash-safe queue) |
-| `host_permissions`: `https://notebooklm.google.com/*` | Доступ к API NotebookLM |
+| `host_permissions`: `https://notebooklm.google.com/*` | Доступ к API Gemini Notebook |
 | `host_permissions`: `https://www.youtube.com/*` | Парсинг комментариев YouTube |
 | `host_permissions`: `https://accounts.google.com/*` | Обнаружение Google-аккаунтов |
 | `optional_host_permissions`: `http://*/*`, `https://*/*` | Загрузка RSS-лент (запрашивается динамически для каждого источника) |
@@ -327,7 +327,7 @@ notebooklm-assistant/
 ### Страница не добавляется в блокнот
 - Убедитесь, что выбран блокнот (не «Select notebook...»).
 - Проверьте, что URL начинается с `http://` или `https://`.
-- Некоторые URL могут быть заблокированы NotebookLM (например, localhost).
+- Некоторые URL могут быть заблокированы Gemini Notebook (например, localhost).
 
 ### YouTube-комментарии не парсятся
 - Убедитесь, что YouTube-видео открыто в **отдельной вкладке**.
@@ -341,7 +341,7 @@ notebooklm-assistant/
 ### Плавающая панель не появляется
 - Панель отображается только **внутри блокнота** (URL вида `notebooklm.google.com/notebook/...`).
 - Проверьте, что в настройках включена опция «Массовое удаление в NLM».
-- Перезагрузите страницу NotebookLM.
+- Перезагрузите страницу Gemini Notebook.
 
 ### RSS-лента не загружается
 - При первом добавлении RSS расширение запросит разрешение на доступ к соответствующему домену — **разрешите**.
@@ -360,16 +360,16 @@ MIT License. Свободное использование, модификаци
 
 ---
 
-**NotebookLM Assistant** не является официальным продуктом Google. Google, NotebookLM, YouTube и Google Drive — товарные знаки Google LLC.
+**Gemini Notebook Assistant** не является официальным продуктом Google. Google, Gemini Notebook, YouTube и Google Drive — товарные знаки Google LLC.
 
 
-# NotebookLM Assistant
+# Gemini Notebook Assistant
 
-> Add web pages, YouTube videos, comments, and PDFs to Google NotebookLM in one click.
+> Add web pages, YouTube videos, comments, and PDFs to Google Gemini Notebook in one click.
 
-**NotebookLM Assistant** is a Google Chrome extension that supercharges [Google NotebookLM](https://notebooklm.google.com). It lets you quickly add sources from your browser, parse YouTube comments, bulk-manage sources, and sync Google Drive files — all without manually copying links.
+**Gemini Notebook Assistant** is a Google Chrome extension that supercharges [Google Gemini Notebook](https://notebooklm.google.com). It lets you quickly add sources from your browser, parse YouTube comments, bulk-manage sources, and sync Google Drive files — all without manually copying links.
 
-![Chrome](https://img.shields.io/badge/Chrome-MV3-green) ![Version](https://img.shields.io/badge/version-3.1.0-blue) ![License](https://img.shields.io/badge/license-MIT-yellow)
+![Chrome](https://img.shields.io/badge/Chrome-MV3-green) ![Version](https://img.shields.io/badge/version-3.2.0-blue) ![License](https://img.shields.io/badge/license-MIT-yellow)
 
 ---
 
@@ -387,7 +387,7 @@ MIT License. Свободное использование, модификаци
   - [Settings](#settings)
 - [Keyboard Shortcuts](#-keyboard-shortcuts)
 - [Context Menu](#-context-menu)
-- [Floating Toolbar on NotebookLM](#-floating-toolbar-on-notebooklm)
+- [Floating Toolbar on Gemini Notebook](#-floating-toolbar-on-notebooklm)
 - [Multiple Account Support](#-multiple-account-support)
 - [Localization](#-localization)
 - [Technical Details](#-technical-details)
@@ -399,7 +399,7 @@ MIT License. Свободное использование, модификаци
 
 ### Adding Sources
 - **Add Current Page** — send the active tab's URL to the selected notebook with one click
-- **Save as PDF** — capture the full page (with images and styles) as a PDF and upload it to NotebookLM
+- **Save as PDF** — capture the full page (with images and styles) as a PDF and upload it to Gemini Notebook
 - **Add URL Manually** — enter any URL to add as a source
 - **Bulk Import** — paste a list of URLs (one per line) and add them all at once
 - **Import Open Tabs** — pick tabs from a list of all open tabs and send them to a notebook
@@ -416,8 +416,8 @@ MIT License. Свободное использование, модификаци
 - **Google Drive Sync** — update all Google Docs/Sheets/Slides sources to their latest version
 - **Export** — download the source list as a text file
 
-### Floating Toolbar on NotebookLM
-- **Select All / Deselect All** — checkboxes for every source right on the NotebookLM page
+### Floating Toolbar on Gemini Notebook
+- **Select All / Deselect All** — checkboxes for every source right on the Gemini Notebook page
 - **Bulk Delete** — delete selected sources via the API
 - **Sync Drive** — sync Drive files without opening the popup
 - **Drag & Drop** — move the toolbar anywhere on screen (position is saved between sessions)
@@ -426,7 +426,7 @@ MIT License. Свободное использование, модификаци
 - **Queue** — add URLs to a queue for sequential processing with a configurable delay between requests
 - **History** — a log of all actions with search support
 - **Keyboard Shortcuts** — `Alt+Shift+N` (add page), `Alt+Shift+P` (save as PDF)
-- **Context Menu** — right-click → "Add to NotebookLM" / "Save PDF"
+- **Context Menu** — right-click → "Add to Gemini Notebook" / "Save PDF"
 - **Light / Dark Theme** — syncs between the popup and the floating toolbar
 - **English and Russian** interface languages
 - **Backup & Restore** — export/import all settings as JSON
@@ -439,7 +439,7 @@ MIT License. Свободное использование, модификаци
 
 1. **Download** or clone the repository:
    ```bash
-   git clone https://github.com/cyberclerkua-cmd/notebooklm-assistant.git
+   git clone https://github.com/cyberclerkua-cmd/notebooklm-assistant-v3.0.git
    ```
 
 2. **Open** the Chrome extensions page:
@@ -467,7 +467,7 @@ MIT License. Свободное использование, модификаци
 2. **Click** the extension icon — it will automatically detect your accounts and load your notebooks.
 3. **Select a notebook** and start adding sources!
 
-> ⚠️ **Important:** The extension uses your current Google session. You must be signed in to NotebookLM in the same browser.
+> ⚠️ **Important:** The extension uses your current Google session. You must be signed in to Gemini Notebook in the same browser.
 
 ---
 
@@ -594,12 +594,12 @@ Shortcuts can be reassigned at `chrome://extensions/shortcuts`.
 
 Right-click on a page or a link:
 
-- **Add to NotebookLM** — add the page/link to the queue
-- **Save as PDF to NotebookLM** — capture the page as a PDF
+- **Add to Gemini Notebook** — add the page/link to the queue
+- **Save as PDF to Gemini Notebook** — capture the page as a PDF
 
 ---
 
-## 🔲 Floating Toolbar on NotebookLM
+## 🔲 Floating Toolbar on Gemini Notebook
 
 When you open any notebook on `notebooklm.google.com`, a floating toolbar appears in the bottom-right corner:
 
@@ -632,7 +632,7 @@ Switch in **Settings → Language**. Applies to the popup UI (static labels) and
 ## 🔧 Technical Details
 
 ### API
-The extension communicates with NotebookLM through a **reverse-engineered RPC API** (`batchexecute`). NotebookLM does not have a public API. RPC methods used:
+The extension communicates with Gemini Notebook through a **reverse-engineered RPC API** (`batchexecute`). Gemini Notebook does not have a public API. RPC methods used:
 
 | RPC ID | Purpose |
 |--------|---------|
@@ -652,7 +652,7 @@ Comment parsing uses the **YouTube InnerTube API** — YouTube's internal API, e
 - Fetching all comments, including reply threads
 
 ### PDF Capture
-PDF generation uses the `chrome.debugger` API with the Chrome DevTools Protocol (`Page.printToPDF`). The file is then uploaded via NotebookLM's SCOTTY upload protocol.
+PDF generation uses the `chrome.debugger` API with the Chrome DevTools Protocol (`Page.printToPDF`). The file is then uploaded via Gemini Notebook's SCOTTY upload protocol.
 
 ### Data Storage
 - `chrome.storage.sync` — settings (theme, language, toggles)
@@ -666,11 +666,11 @@ PDF generation uses the `chrome.debugger` API with the Chrome DevTools Protocol 
 | `storage` | Save settings, queue, and history |
 | `activeTab` | Access the active tab for adding sources |
 | `scripting` | Inject scripts for YouTube comment parsing |
-| `contextMenus` | "Add to NotebookLM" context menu |
+| `contextMenus` | "Add to Gemini Notebook" context menu |
 | `debugger` | Capture pages as PDF |
 | `notifications` | Chrome notifications for actions |
 | `alarms` | For crash-safe queue processing |
-| `host_permissions`: `https://notebooklm.google.com/*` | Access to the NotebookLM API |
+| `host_permissions`: `https://notebooklm.google.com/*` | Access to the Gemini Notebook API |
 | `host_permissions`: `https://www.youtube.com/*` | YouTube comment parsing |
 | `host_permissions`: `https://accounts.google.com/*` | Google account detection |
 | `optional_host_permissions`: `http://*/*`, `https://*/*` | RSS feed fetching (requested dynamically per-origin) |
@@ -692,7 +692,7 @@ Make sure you are signed in to [notebooklm.google.com](https://notebooklm.google
 ### Page isn't added to the notebook
 - Make sure a notebook is selected (not "Select notebook...").
 - Check that the URL starts with `http://` or `https://`.
-- Some URLs may be blocked by NotebookLM (e.g., localhost).
+- Some URLs may be blocked by Gemini Notebook (e.g., localhost).
 
 ### YouTube comments aren't parsed
 - Make sure the YouTube video is open in a **separate tab**.
@@ -706,7 +706,7 @@ Make sure you are signed in to [notebooklm.google.com](https://notebooklm.google
 ### Floating toolbar doesn't appear
 - The toolbar only appears **inside a notebook** (URL like `notebooklm.google.com/notebook/...`).
 - Check that "Enable bulk delete on NLM" is turned on in Settings.
-- Reload the NotebookLM page.
+- Reload the Gemini Notebook page.
 
 ### RSS feed doesn't load
 - The first time you add an RSS feed, the extension asks for per-origin host permission — **allow it**.
@@ -725,11 +725,33 @@ MIT License. Free to use, modify, and distribute.
 
 ---
 
-**NotebookLM Assistant** is not an official Google product. Google, NotebookLM, YouTube, and Google Drive are trademarks of Google LLC.
+**Gemini Notebook Assistant** is not an official Google product. Google, Gemini Notebook, YouTube, and Google Drive are trademarks of Google LLC.
 
 ---
 
 ## 📋 Changelog
+
+
+### v3.2.0
+
+**Сервис обновился: NotebookLM → Gemini Notebook**
+
+- Обновлено: все надписи "NotebookLM" заменены на "Gemini Notebook" во всём расширении
+  (название расширения, описание, контекстное меню, уведомления, локали RU/EN, README)
+- Обновлено: LICENSE — copyright holder изменён на "Gemini Notebook Assistant Contributors"
+- Сохранено: API-домен `notebooklm.google.com` остаётся без изменений (сервис
+  переехал на новый маркетинговый домен `notebooklm.google`, но backend API
+  продолжает работать на старом домене — подтверждено 2025-07)
+- Сохранено: все RPC-вызовы (`izAoDd`, `wXbhsf`, `CCqFvf`, и т.д.) без изменений
+- Сохранено: формат источников (text/URL/YouTube) без изменений — исправлен в v3.1.0
+- Проверено: все функции расширения работают (syntax check, формат verification)
+
+**Что не изменилось:**
+- Домен `notebooklm.google.com` — это по-прежнему адрес приложения (требует Google-аккаунта)
+- API endpoints (`/_/LabsTailwindUi/data/batchexecute`) — без изменений
+- RPC IDs и форматы payload — без изменений
+- Разрешения (permissions) — без изменений
+
 
 ### v3.1.0
 
@@ -751,7 +773,7 @@ MIT License. Free to use, modify, and distribute.
 - Hardened `escapeHtml`, added `try/catch`, and consistent error handling across popup, app, background, and content script.
 
 #### Added
-- `LICENSE` file (MIT License, copyright 2025 NotebookLM Assistant Contributors).
+- `LICENSE` file (MIT License, copyright 2025 Gemini Notebook Assistant Contributors).
 - Per-origin host permission request for RSS feeds via `chrome.permissions.request()` (no blanket `<all_urls>` access).
 - `alarms` permission to the manifest for crash-safe queue scheduling.
 - `optional_host_permissions` (`http://*/*`, `https://*/*`) for opt-in RSS feed fetching.
@@ -762,4 +784,4 @@ MIT License. Free to use, modify, and distribute.
 
 ---
 
-**NotebookLM Assistant** не является официальным продуктом Google. Google, NotebookLM, YouTube и Google Drive — товарные знаки Google LLC.
+**Gemini Notebook Assistant** не является официальным продуктом Google. Google, Gemini Notebook, YouTube и Google Drive — товарные знаки Google LLC.

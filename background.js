@@ -1,4 +1,4 @@
-/* NotebookLM Assistant v3.1.0 — Background Service Worker
+/* Gemini Notebook Assistant v3.1.0 — Background Service Worker
  * Integrates: RPC API, PDF capture, YouTube comments, queue, history, hotkeys,
  *             multi-account persistence (MV3-safe), RSS parsing, crash-safe
  *             queue scheduling via chrome.alarms.
@@ -35,7 +35,7 @@ async function fetchWithTimeout(url, options = {}, timeout = 30000) {
   }
 }
 
-// ─── NotebookLM RPC API (reverse-engineered, no public API) ───
+// ─── Gemini Notebook RPC API (reverse-engineered, no public API) ───
 const NotebookLMAPI = {
   tokens: {},
   tokensAuthuser: null,  // tracks which account the cached tokens belong to
@@ -46,7 +46,7 @@ const NotebookLMAPI = {
       return this.tokens;
     }
 
-    const url = `https://notebooklm.google.com/?authuser=${authuser}`;
+    const url = `https://notebook.google.com/?authuser=${authuser}`;
     const resp = await fetchWithTimeout(url, { credentials: 'include' });
     const html = await resp.text();
 
@@ -76,7 +76,7 @@ const NotebookLMAPI = {
     if (!this.tokens.cfb2h) throw new Error('Not authenticated');
 
     const au = this.tokens.authuser || 0;
-    const url = new URL('https://notebooklm.google.com/_/LabsTailwindUi/data/batchexecute');
+    const url = new URL('https://notebook.google.com/_/LabsTailwindUi/data/batchexecute');
     url.searchParams.set('rpcids', rpcId);
     url.searchParams.set('source-path', sourcePath);
     url.searchParams.set('f.sid', this.tokens.cfb2h);
@@ -303,7 +303,7 @@ const NotebookLMAPI = {
   //
   // The izAoDd RPC expects the first param to be a LIST of source descriptors.
   // Each descriptor is an 8-element array (same length as URL descriptors) so
-  // that NotebookLM recognises it as a valid source:
+  // that Gemini Notebook recognises it as a valid source:
   //
   //   URL source:  [null, null,  [url], null, null, null, null, null]
   //   Text source: [null, title, [text], null, null, null, null, null]
@@ -379,7 +379,7 @@ const NotebookLMAPI = {
     // source count. This catches silent format rejections.
     if (verify && beforeCount !== null) {
       try {
-        // Small delay to let NotebookLM's backend commit the new source.
+        // Small delay to let Gemini Notebook's backend commit the new source.
         await new Promise(r => setTimeout(r, 800));
         const nbAfter = await this.getNotebook(notebookId);
         const afterCount = nbAfter.sources ? nbAfter.sources.length : 0;
@@ -388,7 +388,7 @@ const NotebookLMAPI = {
           throw new Error(
             `Source was not created. Notebook source count did not increase ` +
             `(before=${beforeCount}, after=${afterCount}). ` +
-            `The text-source format may be incompatible with this version of NotebookLM.`
+            `The text-source format may be incompatible with this version of Gemini Notebook.`
           );
         }
       } catch (verifyErr) {
@@ -417,7 +417,7 @@ const NotebookLMAPI = {
 
   async getUploadUrl(notebookId, filename, sourceId, byteLength) {
     const au = this.tokens.authuser || 0;
-    const url = `https://notebooklm.google.com/upload/_/?authuser=${au}`;
+    const url = `https://notebook.google.com/upload/_/?authuser=${au}`;
     const metadata = JSON.stringify({
       PROJECT_ID: notebookId,
       SOURCE_NAME: filename,
@@ -549,7 +549,7 @@ const NotebookLMAPI = {
   },
 
   getNotebookUrl(notebookId, authuser = 0) {
-    return `https://notebooklm.google.com/notebook/${notebookId}?authuser=${authuser}`;
+    return `https://notebook.google.com/notebook/${notebookId}?authuser=${authuser}`;
   }
 };
 
@@ -727,7 +727,7 @@ async function doParseComments(notebookId, videoId, tabId, authuser, parseId) {
           throw new Error(
             `Verification failed: notebook source count did not increase ` +
             `(before=${sourcesBefore}, after=${sourcesAfter}). ` +
-            `The text source format may be incompatible with this NotebookLM version. ` +
+            `The text source format may be incompatible with this Gemini Notebook version. ` +
             `Try adding a regular URL source to confirm the notebook is accessible.`
           );
         }
@@ -804,7 +804,7 @@ async function notify(id, options) {
     const opts = {
       type: 'basic',
       iconUrl: 'icons/icon128.png',
-      title: options.title || 'NotebookLM Assistant',
+      title: options.title || 'Gemini Notebook Assistant',
       message: options.message || ''
     };
     // chrome.notifications.create supports (id, options, callback). Use the
@@ -1271,7 +1271,7 @@ function initContextMenus() {
     try {
       chrome.contextMenus.create({
         id: 'add-to-nlm',
-        title: chrome.i18n.getMessage('contextMenuAdd') || 'Add to NotebookLM',
+        title: chrome.i18n.getMessage('contextMenuAdd') || 'Add to Gemini Notebook',
         contexts: ['page', 'link']
       }, () => {
         if (chrome.runtime.lastError) {
@@ -1280,7 +1280,7 @@ function initContextMenus() {
       });
       chrome.contextMenus.create({
         id: 'add-as-pdf',
-        title: chrome.i18n.getMessage('contextMenuPdf') || 'Save as PDF to NotebookLM',
+        title: chrome.i18n.getMessage('contextMenuPdf') || 'Save as PDF to Gemini Notebook',
         contexts: ['page']
       }, () => {
         if (chrome.runtime.lastError) {
@@ -1319,7 +1319,7 @@ chrome.commands.onCommand.addListener(async (command) => {
       await notify('queue-add', { message: `Added to queue: ${tab.url}` });
     } else if (command === 'add-as-pdf') {
       await chrome.storage.local.set({ pendingPdf: { tabId: tab.id, title: tab.title, url: tab.url } });
-      await notify('pdf-start', { title: 'NotebookLM', message: 'Generating PDF and uploading...' });
+      await notify('pdf-start', { title: 'Gemini Notebook', message: 'Generating PDF and uploading...' });
     }
   } catch (e) {
     console.error('onCommand error:', e);
@@ -1373,16 +1373,26 @@ async function handleMessage(request, sender) {
 
     // ── Account persistence (new) ──
     case 'get-active-account': {
+      // Return authuser immediately (fast — from storage.sync).
+      // Accounts are returned from session cache if available; if not cached,
+      // we return an empty array rather than blocking on a slow network fetch
+      // to accounts.google.com. The content script doesn't need accounts to
+      // render the toolbar — only the authuser is needed for messaging.
+      // The popup will trigger a fresh list-accounts call when opened.
       const authuser = await getActiveAuthuser();
       let accounts = [];
       try {
         const session = await chrome.storage.session.get(['lastAccounts']);
         accounts = session.lastAccounts || [];
       } catch (_) {}
-      // If no cached accounts, try to fetch fresh.
+      // If no cached accounts, fire a background fetch (non-blocking) to
+      // populate the cache for next time, but return immediately with empty.
       if (!accounts.length) {
-        accounts = await NotebookLMAPI.listAccounts();
-        await chrome.storage.session.set({ lastAccounts: accounts });
+        NotebookLMAPI.listAccounts().then((fetched) => {
+          if (fetched && fetched.length) {
+            chrome.storage.session.set({ lastAccounts: fetched }).catch(() => {});
+          }
+        }).catch(() => {});
       }
       return { result: { authuser, accounts } };
     }

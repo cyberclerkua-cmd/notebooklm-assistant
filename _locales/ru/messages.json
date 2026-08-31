@@ -1,121 +1,370 @@
 {
-  "extName": { "message": "NotebookLM Assistant" },
-  "extDescription": { "message": "Добавляйте веб-страницы, видео YouTube, комментарии и PDF в Google NotebookLM одним кликом." },
-  "cmdAddPage": { "message": "Добавить текущую страницу в NotebookLM" },
-  "cmdAddPdf": { "message": "Сохранить страницу как PDF в NotebookLM" },
-
-  "popupTitle": { "message": "NotebookLM Assistant" },
-  "tabHome": { "message": "Главная" },
-  "tabParsers": { "message": "Парсеры" },
-  "tabQueue": { "message": "Очередь" },
-  "tabOrganize": { "message": "Источники" },
-  "tabHistory": { "message": "История" },
-  "tabSettings": { "message": "Настройки" },
-
-  "account": { "message": "Аккаунт" },
-  "selectAccount": { "message": "Выберите аккаунт" },
-  "notebook": { "message": "Блокнот" },
-  "selectNotebook": { "message": "Выберите блокнот" },
-  "createNotebook": { "message": "Создать блокнот" },
-  "newNotebookTitle": { "message": "Название нового блокнота" },
-  "create": { "message": "Создать" },
-
-  "addCurrentPage": { "message": "Добавить страницу" },
-  "addAsPdf": { "message": "Сохранить PDF" },
-  "addUrl": { "message": "Добавить URL" },
-  "enterUrl": { "message": "Введите URL..." },
-  "add": { "message": "Добавить" },
-  "bulkImport": { "message": "Массовый импорт URL" },
-  "bulkPlaceholder": { "message": "Вставьте ссылки, по одной на строку..." },
-  "addAll": { "message": "Добавить все" },
-  "importTabs": { "message": "Импорт открытых вкладок" },
-
-  "parseComments": { "message": "Парсинг комментариев YouTube" },
-  "commentsMode": { "message": "Сортировка" },
-  "commentsTop": { "message": "Лучшие комментарии" },
-  "commentsNewest": { "message": "Сначала новые" },
-  "commentsLimit": { "message": "Макс. комментариев" },
-  "commentsIncludeReplies": { "message": "Включить ответы" },
-  "startParsing": { "message": "Начать парсинг" },
-  "cancelParsing": { "message": "Отмена" },
-  "parsingProgress": { "message": "Загрузка комментариев..." },
-  "parsingDone": { "message": "Готово! $COUNT$ комментариев отправлено.", "placeholders": { "COUNT": { "content": "$1" } } },
-
-  "rssImport": { "message": "Импорт RSS / Sitemap" },
-  "rssPlaceholder": { "message": "Введите URL RSS, Atom или Sitemap..." },
-  "rssParse": { "message": "Парсить" },
-  "rssAutoDetect": { "message": "Найти RSS на текущей странице" },
-  "youtubePlaylist": { "message": "YouTube Плейлист / Канал" },
-  "ytExtract": { "message": "Извлечь URL из текущей вкладки" },
-  "extractLinks": { "message": "Извлечь ссылки со страницы" },
-
-  "queueEmpty": { "message": "Очередь пуста" },
-  "queueItems": { "message": "$COUNT$ элементов в очереди", "placeholders": { "COUNT": { "content": "$1" } } },
-  "processQueue": { "message": "Обработать очередь" },
-  "clearQueue": { "message": "Очистить" },
-
-  "sources": { "message": "Источники" },
-  "selectAll": { "message": "Выбрать все" },
-  "deleteSelected": { "message": "Удалить выбранные" },
-  "syncDrive": { "message": "Синхр. Google Drive" },
-  "exportSources": { "message": "Экспорт источников" },
-  "tags": { "message": "Теги" },
-  "folders": { "message": "Папки" },
-
-  "noHistory": { "message": "История пуста" },
-  "clearHistory": { "message": "Очистить историю" },
-  "searchHistory": { "message": "Поиск по истории..." },
-
-  "settingsTheme": { "message": "Тема" },
-  "themeLight": { "message": "Светлая" },
-  "themeDark": { "message": "Тёмная" },
-  "settingsLanguage": { "message": "Язык" },
-  "settingsDelay": { "message": "Задержка между добавлениями (мс)" },
-  "settingsBulkDelete": { "message": "Массовое удаление в NLM" },
-  "settingsSyncDrive": { "message": "Показывать кнопку синхр. Drive" },
-  "settingsNotifications": { "message": "Показывать уведомления" },
-  "settingsBackup": { "message": "Резервная копия" },
-  "settingsRestore": { "message": "Восстановить" },
-
-  "contextMenuAdd": { "message": "Добавить в NotebookLM" },
-  "contextMenuPdf": { "message": "Сохранить PDF в NotebookLM" },
-
-  "statusAdding": { "message": "Добавляю..." },
-  "statusAdded": { "message": "Добавлено!" },
-  "statusError": { "message": "Ошибка" },
-  "statusCreating": { "message": "Создаю..." },
-  "statusCreated": { "message": "Создано!" },
-  "statusDeleting": { "message": "Удаляю..." },
-  "statusSyncing": { "message": "Синхронизирую..." },
-
-  "confirmDelete": { "message": "Удалить $COUNT$ источников?", "placeholders": { "COUNT": { "content": "$1" } } },
-  "confirmClear": { "message": "Очистить всё?" },
-
-  "addToQueue": { "message": "Добавить в очередь" },
-  "rssItemsFound": { "message": "Найдено элементов: $COUNT$", "placeholders": { "COUNT": { "content": "$1" } } },
-  "rssNoItems": { "message": "В ленте не найдено элементов" },
-  "rssPermissionNeeded": { "message": "Требуется разрешение для загрузки RSS-ленты" },
-  "confirmRestore": { "message": "Восстановить настройки из файла? Текущие настройки будут перезаписаны." },
-  "closePanel": { "message": "Закрыть" },
-  "minimizePanel": { "message": "Свернуть" },
-  "tabSources": { "message": "Источники" },
-  "appTitle": { "message": "Менеджер вкладок" },
-  "appSubtitle": { "message": "Выберите вкладки для добавления в NotebookLM" },
-  "importSelected": { "message": "Импортировать выбранные" },
-  "deselectAll": { "message": "Снять выделение" },
-  "noTabsFound": { "message": "Открытые вкладки не найдены" },
-  "tabsCount": { "message": "Найдено вкладок: $COUNT$", "placeholders": { "COUNT": { "content": "$1" } } },
-  "importing": { "message": "Импортирование..." },
-  "importDone": { "message": "Успешно импортировано вкладок: $COUNT$", "placeholders": { "COUNT": { "content": "$1" } } },
-  "importError": { "message": "Ошибка импорта: $ERROR$", "placeholders": { "ERROR": { "content": "$1" } } },
-  "failedLoadTabs": { "message": "Не удалось загрузить вкладки: $ERROR$", "placeholders": { "ERROR": { "content": "$1" } } },
-  "retry": { "message": "Повторить" },
-  "parseAlreadyRunning": { "message": "Парсинг уже выполняется. Пожалуйста, подождите." },
-  "requestTimeout": { "message": "Время ожидания запроса истекло. Попробуйте снова." },
-  "sourcesDeleted": { "message": "Удалено источников: $COUNT$", "placeholders": { "COUNT": { "content": "$1" } } },
-  "pdfGenerating": { "message": "Генерация PDF и загрузка..." },
-  "pdfDone": { "message": "PDF добавлен в блокнот" },
-  "pdfError": { "message": "Ошибка PDF: $ERROR$", "placeholders": { "ERROR": { "content": "$1" } } },
-  "manageTabs": { "message": "Управление вкладками" },
-  "permissionDenied": { "message": "Разрешение отклонено" }
+  "extName": {
+    "message": "Gemini Notebook Assistant"
+  },
+  "extDescription": {
+    "message": "Добавляйте веб-страницы, видео YouTube, комментарии и PDF в Google Gemini Notebook одним кликом."
+  },
+  "cmdAddPage": {
+    "message": "Добавить текущую страницу в Gemini Notebook"
+  },
+  "cmdAddPdf": {
+    "message": "Сохранить страницу как PDF в Gemini Notebook"
+  },
+  "popupTitle": {
+    "message": "Gemini Notebook Assistant"
+  },
+  "tabHome": {
+    "message": "Главная"
+  },
+  "tabParsers": {
+    "message": "Парсеры"
+  },
+  "tabQueue": {
+    "message": "Очередь"
+  },
+  "tabOrganize": {
+    "message": "Источники"
+  },
+  "tabHistory": {
+    "message": "История"
+  },
+  "tabSettings": {
+    "message": "Настройки"
+  },
+  "account": {
+    "message": "Аккаунт"
+  },
+  "selectAccount": {
+    "message": "Выберите аккаунт"
+  },
+  "notebook": {
+    "message": "Блокнот"
+  },
+  "selectNotebook": {
+    "message": "Выберите блокнот"
+  },
+  "createNotebook": {
+    "message": "Создать блокнот"
+  },
+  "newNotebookTitle": {
+    "message": "Название нового блокнота"
+  },
+  "create": {
+    "message": "Создать"
+  },
+  "addCurrentPage": {
+    "message": "Добавить страницу"
+  },
+  "addAsPdf": {
+    "message": "Сохранить PDF"
+  },
+  "addUrl": {
+    "message": "Добавить URL"
+  },
+  "enterUrl": {
+    "message": "Введите URL..."
+  },
+  "add": {
+    "message": "Добавить"
+  },
+  "bulkImport": {
+    "message": "Массовый импорт URL"
+  },
+  "bulkPlaceholder": {
+    "message": "Вставьте ссылки, по одной на строку..."
+  },
+  "addAll": {
+    "message": "Добавить все"
+  },
+  "importTabs": {
+    "message": "Импорт открытых вкладок"
+  },
+  "parseComments": {
+    "message": "Парсинг комментариев YouTube"
+  },
+  "commentsMode": {
+    "message": "Сортировка"
+  },
+  "commentsTop": {
+    "message": "Лучшие комментарии"
+  },
+  "commentsNewest": {
+    "message": "Сначала новые"
+  },
+  "commentsLimit": {
+    "message": "Макс. комментариев"
+  },
+  "commentsIncludeReplies": {
+    "message": "Включить ответы"
+  },
+  "startParsing": {
+    "message": "Начать парсинг"
+  },
+  "cancelParsing": {
+    "message": "Отмена"
+  },
+  "parsingProgress": {
+    "message": "Загрузка комментариев..."
+  },
+  "parsingDone": {
+    "message": "Готово! $COUNT$ комментариев отправлено.",
+    "placeholders": {
+      "COUNT": {
+        "content": "$1"
+      }
+    }
+  },
+  "rssImport": {
+    "message": "Импорт RSS / Sitemap"
+  },
+  "rssPlaceholder": {
+    "message": "Введите URL RSS, Atom или Sitemap..."
+  },
+  "rssParse": {
+    "message": "Парсить"
+  },
+  "rssAutoDetect": {
+    "message": "Найти RSS на текущей странице"
+  },
+  "youtubePlaylist": {
+    "message": "YouTube Плейлист / Канал"
+  },
+  "ytExtract": {
+    "message": "Извлечь URL из текущей вкладки"
+  },
+  "extractLinks": {
+    "message": "Извлечь ссылки со страницы"
+  },
+  "queueEmpty": {
+    "message": "Очередь пуста"
+  },
+  "queueItems": {
+    "message": "$COUNT$ элементов в очереди",
+    "placeholders": {
+      "COUNT": {
+        "content": "$1"
+      }
+    }
+  },
+  "processQueue": {
+    "message": "Обработать очередь"
+  },
+  "clearQueue": {
+    "message": "Очистить"
+  },
+  "sources": {
+    "message": "Источники"
+  },
+  "selectAll": {
+    "message": "Выбрать все"
+  },
+  "deleteSelected": {
+    "message": "Удалить выбранные"
+  },
+  "syncDrive": {
+    "message": "Синхр. Google Drive"
+  },
+  "exportSources": {
+    "message": "Экспорт источников"
+  },
+  "tags": {
+    "message": "Теги"
+  },
+  "folders": {
+    "message": "Папки"
+  },
+  "noHistory": {
+    "message": "История пуста"
+  },
+  "clearHistory": {
+    "message": "Очистить историю"
+  },
+  "searchHistory": {
+    "message": "Поиск по истории..."
+  },
+  "settingsTheme": {
+    "message": "Тема"
+  },
+  "themeLight": {
+    "message": "Светлая"
+  },
+  "themeDark": {
+    "message": "Тёмная"
+  },
+  "settingsLanguage": {
+    "message": "Язык"
+  },
+  "settingsDelay": {
+    "message": "Задержка между добавлениями (мс)"
+  },
+  "settingsBulkDelete": {
+    "message": "Массовое удаление в NLM"
+  },
+  "settingsSyncDrive": {
+    "message": "Показывать кнопку синхр. Drive"
+  },
+  "settingsNotifications": {
+    "message": "Показывать уведомления"
+  },
+  "settingsBackup": {
+    "message": "Резервная копия"
+  },
+  "settingsRestore": {
+    "message": "Восстановить"
+  },
+  "contextMenuAdd": {
+    "message": "Добавить в Gemini Notebook"
+  },
+  "contextMenuPdf": {
+    "message": "Сохранить PDF в Gemini Notebook"
+  },
+  "statusAdding": {
+    "message": "Добавляю..."
+  },
+  "statusAdded": {
+    "message": "Добавлено!"
+  },
+  "statusError": {
+    "message": "Ошибка"
+  },
+  "statusCreating": {
+    "message": "Создаю..."
+  },
+  "statusCreated": {
+    "message": "Создано!"
+  },
+  "statusDeleting": {
+    "message": "Удаляю..."
+  },
+  "statusSyncing": {
+    "message": "Синхронизирую..."
+  },
+  "confirmDelete": {
+    "message": "Удалить $COUNT$ источников?",
+    "placeholders": {
+      "COUNT": {
+        "content": "$1"
+      }
+    }
+  },
+  "confirmClear": {
+    "message": "Очистить всё?"
+  },
+  "addToQueue": {
+    "message": "Добавить в очередь"
+  },
+  "rssItemsFound": {
+    "message": "Найдено элементов: $COUNT$",
+    "placeholders": {
+      "COUNT": {
+        "content": "$1"
+      }
+    }
+  },
+  "rssNoItems": {
+    "message": "В ленте не найдено элементов"
+  },
+  "rssPermissionNeeded": {
+    "message": "Требуется разрешение для загрузки RSS-ленты"
+  },
+  "confirmRestore": {
+    "message": "Восстановить настройки из файла? Текущие настройки будут перезаписаны."
+  },
+  "closePanel": {
+    "message": "Закрыть"
+  },
+  "minimizePanel": {
+    "message": "Свернуть"
+  },
+  "tabSources": {
+    "message": "Источники"
+  },
+  "appTitle": {
+    "message": "Менеджер вкладок"
+  },
+  "appSubtitle": {
+    "message": "Выберите вкладки для добавления в Gemini Notebook"
+  },
+  "importSelected": {
+    "message": "Импортировать выбранные"
+  },
+  "deselectAll": {
+    "message": "Снять выделение"
+  },
+  "noTabsFound": {
+    "message": "Открытые вкладки не найдены"
+  },
+  "tabsCount": {
+    "message": "Найдено вкладок: $COUNT$",
+    "placeholders": {
+      "COUNT": {
+        "content": "$1"
+      }
+    }
+  },
+  "importing": {
+    "message": "Импортирование..."
+  },
+  "importDone": {
+    "message": "Успешно импортировано вкладок: $COUNT$",
+    "placeholders": {
+      "COUNT": {
+        "content": "$1"
+      }
+    }
+  },
+  "importError": {
+    "message": "Ошибка импорта: $ERROR$",
+    "placeholders": {
+      "ERROR": {
+        "content": "$1"
+      }
+    }
+  },
+  "failedLoadTabs": {
+    "message": "Не удалось загрузить вкладки: $ERROR$",
+    "placeholders": {
+      "ERROR": {
+        "content": "$1"
+      }
+    }
+  },
+  "retry": {
+    "message": "Повторить"
+  },
+  "parseAlreadyRunning": {
+    "message": "Парсинг уже выполняется. Пожалуйста, подождите."
+  },
+  "requestTimeout": {
+    "message": "Время ожидания запроса истекло. Попробуйте снова."
+  },
+  "sourcesDeleted": {
+    "message": "Удалено источников: $COUNT$",
+    "placeholders": {
+      "COUNT": {
+        "content": "$1"
+      }
+    }
+  },
+  "pdfGenerating": {
+    "message": "Генерация PDF и загрузка..."
+  },
+  "pdfDone": {
+    "message": "PDF добавлен в блокнот"
+  },
+  "pdfError": {
+    "message": "Ошибка PDF: $ERROR$",
+    "placeholders": {
+      "ERROR": {
+        "content": "$1"
+      }
+    }
+  },
+  "manageTabs": {
+    "message": "Управление вкладками"
+  },
+  "permissionDenied": {
+    "message": "Разрешение отклонено"
+  }
 }

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extName__",
-  "short_name": "NotebookLM Assistant",
-  "version": "3.1.0",
+  "short_name": "Gemini Notebook Assistant",
+  "version": "3.3.7",
   "description": "__MSG_extDescription__",
   "default_locale": "en",
   "minimum_chrome_version": "116",
@@ -19,6 +19,7 @@
   ],
 
   "host_permissions": [
+    "https://notebook.google.com/*",
     "https://notebooklm.google.com/*",
     "https://www.youtube.com/*",
     "https://accounts.google.com/*"
@@ -64,7 +65,10 @@
 
   "content_scripts": [
     {
-      "matches": ["https://notebooklm.google.com/*"],
+      "matches": [
+        "https://notebook.google.com/*",
+        "https://notebooklm.google.com/*"
+      ],
       "js": ["content/notebooklm.js"],
       "css": ["content/notebooklm.css"],
       "run_at": "document_idle",
@@ -75,7 +79,11 @@
   "web_accessible_resources": [
     {
       "resources": ["icons/*"],
-      "matches": ["https://notebooklm.google.com/*", "https://www.youtube.com/*"]
+      "matches": [
+        "https://notebook.google.com/*",
+        "https://notebooklm.google.com/*",
+        "https://www.youtube.com/*"
+      ]
     }
   ]
 }

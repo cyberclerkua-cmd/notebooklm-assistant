@@ -1,4 +1,4 @@
-/* NotebookLM Assistant v3.1.0 — Tab Import App
+/* Gemini Notebook Assistant v3.1.0 — Tab Import App
  * Fixes (Task 6):
  *  - Robust escapeHtml (escapes quotes for attribute-context safety).
  *  - bg(cmd, params) helper: returns a Promise, unwraps { result } envelope,
