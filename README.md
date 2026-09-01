@@ -74,7 +74,7 @@
 
 1. **Скачайте** или клонируйте репозиторий:
    ```bash
-   git clone https://github.com/cyberclerkua-cmd/notebooklm-assistant.git
+   git clone https://github.com/cyberclerkua-cmd/gemininotebook-assistant.git
    ```
 
 2. **Откройте** страницу расширений Chrome:
@@ -439,7 +439,7 @@ MIT License. Свободное использование, модификаци
 
 1. **Download** or clone the repository:
    ```bash
-   git clone https://github.com/cyberclerkua-cmd/notebooklm-assistant.git
+   git clone https://github.com/cyberclerkua-cmd/gemininotebook-assistant.git
    ```
 
 2. **Open** the Chrome extensions page:
